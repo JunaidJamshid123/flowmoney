@@ -6,4 +6,11 @@
     <color name="primary_dark">#1B7046</color>
     <color name="accent">#228D57</color>
     <color name="light_gray">#E5E5E5</color>
+
+    <color name="green_primary">#009B5E</color>
+    <color name="green_light">#E6F5EF</color>
+    <color name="green_dark">#007F4D</color>
+    <color name="gray_text">#666666</color>
+    <color name="gray_light">#EEEEEE</color>
+
 </resources>
