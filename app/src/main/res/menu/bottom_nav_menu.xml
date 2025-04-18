@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_records"
+        android:icon="@drawable/folder"
+        android:title="Records" />
+    <item
+        android:id="@+id/nav_analysis"
+        android:icon="@drawable/pieee"
+        android:title="Analysis" />
+    <item
+        android:id="@+id/nav_budgets"
+        android:icon="@drawable/calculator"
+        android:title="Budgets" />
+    <item
+        android:id="@+id/nav_accounts"
+        android:icon="@drawable/wallet"
+        android:title="Accounts" />
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@drawable/tag"
+        android:title="History" />
+
+</menu>

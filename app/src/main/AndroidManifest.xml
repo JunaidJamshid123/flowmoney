@@ -13,19 +13,32 @@
         android:theme="@style/Theme.FlowMoney"
         tools:targetApi="31">
         <activity
+            android:name=".Activities.Frams.Fram3"
+            android:exported="false" />
+        <activity
+            android:name=".Activities.Frams.Fram2"
+            android:exported="false" />
+        <activity
+            android:name=".Activities.Frams.Fram1"
+            android:exported="false" />
+        <activity
+            android:name=".Activities.Authentication.Signup"
+            android:exported="false" />
+        <activity
+            android:name=".Activities.Authentication.Login"
+            android:exported="false" />
+        <activity
             android:name=".Activities.SplashScreen"
-            android:exported="true" >
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="false">
-
-        </activity>
+            android:exported="false" />
     </application>
 
 </manifest>
