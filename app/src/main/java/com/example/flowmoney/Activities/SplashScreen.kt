@@ -12,6 +12,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.flowmoney.Activities.Authentication.Login
+import com.example.flowmoney.Activities.Authentication.Signup
+import com.example.flowmoney.Activities.Frams.Fram1
+import com.example.flowmoney.Activities.Frams.Fram2
+import com.example.flowmoney.Activities.Frams.Fram3
 import com.example.flowmoney.MainActivity
 import com.example.flowmoney.R
 
@@ -23,12 +28,7 @@ class SplashScreen : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_splash_screen)
 
-        // Setup edge-to-edge display
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+
 
         // Initialize views
         val logoContainer = findViewById<CardView>(R.id.logo_container)

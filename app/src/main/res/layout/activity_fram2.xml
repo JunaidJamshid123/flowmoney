@@ -94,7 +94,7 @@
             android:layout_height="8dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/active_indicator"
-            android:backgroundTint="#4CAF50" />
+            android:backgroundTint="#228D57" />
 
         <View
             android:id="@+id/indicator3"
@@ -113,27 +113,28 @@
         android:layout_marginEnd="16dp"
         android:padding="8dp"
         android:text="Skip"
-        android:textColor="#9E9E9E"
+        android:textColor="#228D57"
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/indicatorLayout" />
 
     <Button
-        android:id="@+id/btnNext"
+        android:id="@+id/btnNext2"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="64dp"
         android:background="@drawable/rounded_button"
-        android:backgroundTint="#4CAF50"
         android:paddingTop="12dp"
         android:paddingBottom="12dp"
         android:text="Next"
         android:textAllCaps="false"
         android:textColor="#FFFFFF"
+        app:backgroundTint="#228D57"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

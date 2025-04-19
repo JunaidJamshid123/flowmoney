@@ -102,7 +102,7 @@
             android:layout_height="8dp"
             android:layout_marginStart="8dp"
             android:background="@drawable/active_indicator"
-            android:backgroundTint="#4CAF50" />
+            android:backgroundTint="#228D57" />
     </LinearLayout>
 
     <TextView
@@ -113,7 +113,7 @@
         android:layout_marginEnd="16dp"
         android:padding="8dp"
         android:text="Skip"
-        android:textColor="#9E9E9E"
+        android:textColor="#228D57"
         android:textSize="16sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/indicatorLayout" />
@@ -124,9 +124,9 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="64dp"
         android:background="@drawable/rounded_button"
-        android:backgroundTint="#4CAF50"
+        app:backgroundTint="#228D57"
         android:paddingTop="12dp"
         android:paddingBottom="12dp"
         android:text="Get Started"

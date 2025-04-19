@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "522872107832",
+    "project_id": "flowmoney-e0d65",
+    "storage_bucket": "flowmoney-e0d65.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:522872107832:android:b07c03068989b1d40b47cd",
+        "android_client_info": {
+          "package_name": "com.example.flowmoney"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvzpjIXsHC8F8hM-niH6Iy1--AIXJOZyI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
