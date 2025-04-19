@@ -1,17 +1,16 @@
 package com.example.flowmoney
 
 import android.os.Bundle
-import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.fragment.app.Fragment
+import com.example.flowmoney.Fragments.*  // Import your fragments here
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -20,8 +19,10 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Set up the bottom navigation
         setupBottomNavigation()
+
+        // Set initial fragment
+        replaceFragment(RecordFragment())
     }
 
     private fun setupBottomNavigation() {
@@ -30,34 +31,33 @@ class MainActivity : AppCompatActivity() {
         bottomNavigationView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_records -> {
-
+                    replaceFragment(RecordFragment())
                     true
                 }
                 R.id.nav_analysis -> {
-
+                    replaceFragment(AnalysisFragment())
                     true
                 }
                 R.id.nav_budgets -> {
-
+                    replaceFragment(BudgetFragment())
                     true
                 }
                 R.id.nav_accounts -> {
-
+                    replaceFragment(AccountsFragment())
                     true
                 }
                 R.id.nav_history -> {
-
+                    replaceFragment(CategoryFragment())
                     true
                 }
                 else -> false
             }
         }
-
-        // Set default selected item
-        bottomNavigationView.selectedItemId = R.id.nav_records
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun replaceFragment(fragment: Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .commit()
     }
 }

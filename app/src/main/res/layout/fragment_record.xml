@@ -5,10 +5,48 @@
     android:layout_height="match_parent"
     tools:context=".Fragments.RecordFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="wrap_content">
 
+        <!-- Green header background -->
+        <View
+            android:id="@+id/header_background"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="#228D57"
+            android:layout_alignParentTop="true" />
+
+        <!-- User profile section -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="20dp"
+            android:layout_marginStart="16dp"
+            android:gravity="center_vertical">
+
+            <!-- Profile picture -->
+            <de.hdodenhof.circleimageview.CircleImageView
+                android:id="@+id/profile_image"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/default_profile" />
+
+            <!-- User name -->
+            <TextView
+                android:id="@+id/text_username"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Junaid Jamshid"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+
+
+        <!-- Content for the rest of the fragment would go here -->
+
+    </RelativeLayout>
 </FrameLayout>

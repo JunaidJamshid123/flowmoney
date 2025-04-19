@@ -16,11 +16,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="Hello World!" />
+
     </FrameLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

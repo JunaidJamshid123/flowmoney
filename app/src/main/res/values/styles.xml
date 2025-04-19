@@ -15,4 +15,12 @@
         <item name="itemRippleColor">@color/primary</item>
         <item name="elevation">8dp</item>
     </style>
+
+    <style name="ShapeAppearanceOverlay.App.BottomRoundedCorners" parent="">
+        <item name="cornerFamilyBottomLeft">rounded</item>
+        <item name="cornerFamilyBottomRight">rounded</item>
+        <item name="cornerSizeBottomLeft">24dp</item>
+        <item name="cornerSizeBottomRight">24dp</item>
+    </style>
+
 </resources>
