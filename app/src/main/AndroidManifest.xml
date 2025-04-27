@@ -13,6 +13,9 @@
         android:theme="@style/Theme.FlowMoney"
         tools:targetApi="31">
         <activity
+            android:name=".Activities.profile"
+            android:exported="false" />
+        <activity
             android:name=".Activities.Frams.Fram3"
             android:exported="false" />
         <activity
