@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="@color/white"
     tools:context=".Fragments.AnalysisFragment">
 
     <!-- Header with back button and title -->
@@ -12,15 +12,18 @@
         android:id="@+id/header_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="16dp"
+        android:elevation="2dp"
+        android:background="#228D57"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/btn_back"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:contentDescription="Back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:background="#228D57"
             android:src="@drawable/ic_back"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -32,8 +35,8 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="Analysis"
-            android:textColor="#27865C"
-            android:textSize="18sp"
+            android:textColor="@color/white"
+            android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btn_share"
@@ -42,10 +45,10 @@
 
         <ImageButton
             android:id="@+id/btn_share"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:contentDescription="Share"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="#228D57"
+            android:padding="8dp"
             android:src="@drawable/ic_share"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -59,6 +62,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scrollbars="none"
+        android:paddingHorizontal="16dp"
+        android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/header_layout">
 
         <LinearLayout
@@ -66,48 +71,55 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
-            android:paddingTop="8dp"
+            android:paddingTop="12dp"
             android:paddingBottom="16dp">
 
             <Button
                 android:id="@+id/btn_day"
-                android:layout_width="70dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
+                android:layout_width="80dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_button_selected"
                 android:text="Day"
                 android:textColor="@android:color/white"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:elevation="2dp"
+                android:stateListAnimator="@null" />
 
             <Button
                 android:id="@+id/btn_week"
-                android:layout_width="70dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
+                android:layout_width="80dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_button_unselected"
                 android:text="Week"
-                android:textColor="@android:color/black"
-                android:textSize="14sp" />
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:elevation="1dp"
+                android:stateListAnimator="@null" />
 
             <Button
                 android:id="@+id/btn_month"
-                android:layout_width="70dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
+                android:layout_width="80dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="12dp"
                 android:background="@drawable/bg_button_unselected"
                 android:text="Month"
-                android:textColor="@android:color/black"
-                android:textSize="14sp" />
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:elevation="1dp"
+                android:stateListAnimator="@null" />
 
             <Button
                 android:id="@+id/btn_year"
-                android:layout_width="70dp"
-                android:layout_height="40dp"
+                android:layout_width="80dp"
+                android:layout_height="44dp"
                 android:background="@drawable/bg_button_unselected"
                 android:text="Year"
-                android:textColor="@android:color/black"
-                android:textSize="14sp" />
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:elevation="1dp"
+                android:stateListAnimator="@null" />
         </LinearLayout>
     </HorizontalScrollView>
 
@@ -119,46 +131,67 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:background="@drawable/bg_spinner"
-        android:padding="12dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:elevation="2dp"
         android:spinnerMode="dropdown"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/time_period_scroll" />
 
-    <!-- Graph container -->
-    <FrameLayout
-        android:id="@+id/graph_container"
+    <!-- Graph container with card background -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/graph_card"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="220dp"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="4dp"
         app:layout_constraintTop_toBottomOf="@id/spinner_filter">
 
-        <com.example.flowmoney.utlities.ExpenseChartView
-            android:id="@+id/expense_chart"
+        <FrameLayout
+            android:id="@+id/graph_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:padding="16dp">
 
-        <LinearLayout
-            android:id="@+id/data_point_indicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="30dp"
-            android:background="@drawable/bg_data_point"
-            android:orientation="vertical"
-            android:paddingHorizontal="12dp"
-            android:paddingVertical="6dp">
+            <com.example.flowmoney.utlities.ExpenseChartView
+                android:id="@+id/expense_chart"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
-            <TextView
-                android:id="@+id/tv_data_point_value"
+            <androidx.cardview.widget.CardView
+                android:id="@+id/data_point_card"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$1,230"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-    </FrameLayout>
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="30dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:id="@+id/data_point_indicator"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_data_point"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp">
+
+                    <TextView
+                        android:id="@+id/tv_data_point_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="$1,230"
+                        android:textColor="#228D57"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+        </FrameLayout>
+    </androidx.cardview.widget.CardView>
 
     <!-- Month labels -->
     <LinearLayout
@@ -166,9 +199,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/graph_container">
+        app:layout_constraintTop_toBottomOf="@id/graph_card">
 
         <TextView
             android:layout_width="0dp"
@@ -176,8 +209,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="Mar"
-            android:textColor="#808080"
-            android:textSize="12sp" />
+            android:textColor="#228D57"
+            android:textSize="12sp"/>
 
         <TextView
             android:layout_width="0dp"
@@ -185,8 +218,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="Apr"
-            android:textColor="#808080"
-            android:textSize="12sp" />
+            android:textColor="#228D57"
+            android:textSize="12sp"/>
 
         <TextView
             android:layout_width="0dp"
@@ -194,9 +227,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="May"
-            android:textColor="#27865C"
-            android:textSize="12sp"
-            android:textStyle="bold" />
+            android:textColor="#228D57"
+            android:textSize="12sp"/>
 
         <TextView
             android:layout_width="0dp"
@@ -204,8 +236,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="Jun"
-            android:textColor="#808080"
-            android:textSize="12sp" />
+            android:textColor="#228D57"
+            android:textSize="12sp"/>
 
         <TextView
             android:layout_width="0dp"
@@ -213,8 +245,8 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="Jul"
-            android:textColor="#808080"
-            android:textSize="12sp" />
+            android:textColor="#228D57"
+            android:textSize="12sp"/>
 
         <TextView
             android:layout_width="0dp"
@@ -222,37 +254,42 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="Aug"
-            android:textColor="#808080"
-            android:textSize="12sp" />
+            android:textColor="#228D57"
+            android:textSize="12sp"/>
     </LinearLayout>
 
     <!-- Top Spending header -->
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/top_spending_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="32dp"
-        android:orientation="horizontal"
+        android:layout_marginTop="24dp"
         app:layout_constraintTop_toBottomOf="@id/month_labels">
 
         <TextView
-            android:layout_width="0dp"
+            android:id="@+id/tv_top_spending"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="Top Spending"
-            android:textColor="@android:color/black"
+            android:textColor="#228D57"
             android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
         <ImageButton
             android:id="@+id/btn_sort"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:contentDescription="Sort"
-            android:src="@drawable/ic_sort" />
-    </LinearLayout>
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_circle_button"
+            android:padding="8dp"
+            android:src="@drawable/ic_sort"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- RecyclerView container -->
     <androidx.recyclerview.widget.RecyclerView
