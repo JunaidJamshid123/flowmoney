@@ -13,6 +13,9 @@
         android:theme="@style/Theme.FlowMoney"
         tools:targetApi="31">
         <activity
+            android:name=".AddTransaction"
+            android:exported="false" />
+        <activity
             android:name=".Activities.TransactionDetails"
             android:exported="false" />
         <activity
