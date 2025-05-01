@@ -5,6 +5,236 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#80000000"
     tools:context=".AddNewAccount">
 
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/tvAddNewAccountTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="Add new account"
+                android:textColor="#333333"
+                android:textSize="24sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tvInitialAmountLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Initial amount"
+                android:textColor="#333333"
+                android:textSize="18sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvAddNewAccountTitle" />
+
+            <EditText
+                android:id="@+id/etInitialAmount"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/edit_text_background"
+                android:hint="0"
+                android:inputType="numberDecimal"
+                android:padding="12dp"
+                android:textColor="#333333"
+                android:textColorHint="#AAAAAA"
+                android:textSize="18sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvInitialAmountLabel" />
+
+            <TextView
+                android:id="@+id/tvInitialAmountNote"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:fontFamily="sans-serif-light"
+                android:text="*Initial amount will not be reflected in analysis"
+                android:textColor="#666666"
+                android:textSize="14sp"
+                android:textStyle="italic"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/etInitialAmount" />
+
+            <TextView
+                android:id="@+id/tvNameLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Name"
+                android:textColor="#333333"
+                android:textSize="18sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvInitialAmountNote" />
+
+            <EditText
+                android:id="@+id/etName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/edit_text_background"
+                android:hint="Untitled"
+                android:inputType="text"
+                android:padding="12dp"
+                android:textColor="#333333"
+                android:textColorHint="#AAAAAA"
+                android:textSize="18sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvNameLabel" />
+
+            <TextView
+                android:id="@+id/tvIconLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Icon"
+                android:textColor="#333333"
+                android:textSize="18sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/etName" />
+
+            <HorizontalScrollView
+                android:id="@+id/iconScrollView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:scrollbars="none"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvIconLabel">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <RadioGroup
+                        android:id="@+id/rgIcons"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/rbCash"
+                            android:layout_width="70dp"
+                            android:layout_height="70dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/icon_selector"
+                            android:button="@null"
+                            android:checked="true"
+                            android:drawableTop="@drawable/ic_cash"
+                            android:gravity="center"
+                            android:padding="8dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbCreditCard"
+                            android:layout_width="70dp"
+                            android:layout_height="70dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/icon_selector"
+                            android:button="@null"
+                            android:drawableTop="@drawable/ic_cash"
+                            android:gravity="center"
+                            android:padding="8dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbPiggyBank"
+                            android:layout_width="70dp"
+                            android:layout_height="70dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/icon_selector"
+                            android:button="@null"
+                            android:drawableTop="@drawable/ic_cash"
+                            android:gravity="center"
+                            android:padding="8dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbMastercard"
+                            android:layout_width="70dp"
+                            android:layout_height="70dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@drawable/icon_selector"
+                            android:button="@null"
+                            android:drawableTop="@drawable/ic_cash"
+                            android:gravity="center"
+                            android:padding="8dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbVisa"
+                            android:layout_width="70dp"
+                            android:layout_height="70dp"
+                            android:background="@drawable/icon_selector"
+                            android:button="@null"
+                            android:drawableTop="@drawable/ic_cash"
+                            android:gravity="center"
+                            android:padding="8dp" />
+                    </RadioGroup>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:orientation="horizontal"
+                android:weightSum="2"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/iconScrollView">
+
+                <Button
+                    android:id="@+id/btnCancel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_outline_background"
+                    android:fontFamily="sans-serif-medium"
+                    android:padding="12dp"
+                    android:text="CANCEL"
+                    android:textColor="#1E8E3E"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btnSave"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/button_filled_background"
+                    android:fontFamily="sans-serif-medium"
+                    android:padding="12dp"
+                    android:text="SAVE"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
 </androidx.constraintlayout.widget.ConstraintLayout>
