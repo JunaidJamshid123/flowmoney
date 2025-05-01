@@ -1,10 +1,10 @@
 package com.example.flowmoney.Activities.Authentication
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.flowmoney.R
 
 class Login : AppCompatActivity() {
@@ -13,5 +13,13 @@ class Login : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_login)
 
+        // Find the "Sign Up" TextView
+        val tvSignUp = findViewById<TextView>(R.id.tvSignUp)
+
+        // Set click listener to navigate to Signup activity
+        tvSignUp.setOnClickListener {
+            val intent = Intent(this, Signup::class.java)
+            startActivity(intent)
+        }
     }
 }

@@ -53,7 +53,7 @@ class SplashScreen : AppCompatActivity() {
 
         // Navigate to main activity after splash timeout
         Handler(Looper.getMainLooper()).postDelayed({
-            val mainIntent = Intent(this, MainActivity::class.java)
+            val mainIntent = Intent(this, Fram1::class.java)
             startActivity(mainIntent)
             finish()
         }, splashTimeout)
