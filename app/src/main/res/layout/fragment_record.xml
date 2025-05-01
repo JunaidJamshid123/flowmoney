@@ -14,50 +14,18 @@
         <ImageView
             android:id="@+id/header_background"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
+            android:layout_height="180dp"
             android:scaleType="centerCrop"
             android:src="@drawable/background"
             android:layout_alignParentTop="true" />
-
-        <!-- User profile section -->
-        <LinearLayout
-            android:id="@+id/profile_section"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="20dp"
-            android:layout_marginStart="20dp"
-            android:gravity="center_vertical">
-
-            <!-- Profile picture -->
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/profile_image"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/default_profile"
-                app:civ_border_width="2dp"
-                app:civ_border_color="#FFFFFF" />
-
-            <!-- User name -->
-            <TextView
-                android:id="@+id/text_username"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:text="Junaid Jamshid"
-                android:textColor="#FFFFFF"
-                android:textSize="17sp"
-                android:fontFamily="sans-serif-medium" />
-        </LinearLayout>
 
         <!-- Balance Card - Modernized design -->
         <androidx.cardview.widget.CardView
             android:id="@+id/balance_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/profile_section"
             android:layout_marginStart="20dp"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="30dp"
             android:layout_marginEnd="20dp"
             app:cardCornerRadius="18dp"
             app:cardElevation="6dp">
@@ -129,7 +97,7 @@
                         app:tint="#FFFFFF" />
                 </RelativeLayout>
 
-                <!-- Income and Expenses Section -->
+                <!-- Income, Expenses, and Savings Section -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -224,11 +192,55 @@
                             android:fontFamily="sans-serif-medium"
                             android:layout_marginTop="4dp" />
                     </LinearLayout>
+
+                    <!-- Savings Section -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/up_arrow"
+                                android:alpha="0.9"
+                                android:rotation="45"
+                                app:tint="#FFFFFF" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Savings"
+                                android:textColor="#FFFFFF"
+                                android:textSize="14sp"
+                                android:alpha="0.9"
+                                android:fontFamily="sans-serif"
+                                android:layout_marginStart="6dp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/text_savings"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="$424.00"
+                            android:textColor="#FFFFFF"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-medium"
+                            android:layout_marginTop="4dp" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Filter Section -->
+        <!-- Filter Section - Improved with Spinner Style -->
         <androidx.cardview.widget.CardView
             android:id="@+id/filter_card"
             android:layout_width="match_parent"
@@ -241,11 +253,13 @@
             app:cardElevation="2dp">
 
             <LinearLayout
-                android:layout_width="384dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="12dp">
+                android:padding="12dp"
+                android:gravity="center_vertical">
 
+                <!-- Date Filter - Spinner Style -->
                 <!-- Date Filter -->
                 <LinearLayout
                     android:id="@+id/date_filter"
@@ -258,12 +272,10 @@
                     android:paddingTop="6dp"
                     android:paddingEnd="12dp"
                     android:paddingBottom="6dp">
-
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
                         android:src="@drawable/calendarr" />
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -271,7 +283,6 @@
                         android:text="April 2025"
                         android:textColor="#333333"
                         android:textSize="13sp" />
-
                     <ImageView
                         android:layout_width="14dp"
                         android:layout_height="14dp"
@@ -280,77 +291,30 @@
                         app:tint="#555555" />
                 </LinearLayout>
 
-                <!-- Category Filter -->
-                <LinearLayout
-                    android:id="@+id/category_filter"
-                    android:layout_width="wrap_content"
+
+                <!-- Category Filter - Spinner Style -->
+                <Spinner
+                    android:id="@+id/category_spinner"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/filter_chip_background"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="6dp">
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/spinner_background"
+                    android:spinnerMode="dropdown"
+                    android:padding="8dp"
+                    android:popupBackground="@drawable/spinner_dropdown_background" />
 
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/category"
-                        app:tint="#6BC98C" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="All"
-                        android:textColor="#333333"
-                        android:textSize="13sp" />
-
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:layout_marginStart="4dp"
-                        android:src="@drawable/ic_dropdown"
-                        app:tint="#555555" />
-                </LinearLayout>
-
-                <!-- Sort Filter -->
-                <LinearLayout
-                    android:id="@+id/sort_filter"
-                    android:layout_width="wrap_content"
+                <!-- Sort Filter - Spinner Style -->
+                <Spinner
+                    android:id="@+id/sort_spinner"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/filter_chip_background"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="8dp"
-                    android:paddingBottom="6dp">
-
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/sort_descending"
-                        app:tint="#6BC98C" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="Newest"
-                        android:textColor="#333333"
-                        android:textSize="13sp" />
-
-                    <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
-                        android:layout_marginStart="4dp"
-                        android:src="@drawable/ic_dropdown"
-                        app:tint="#555555" />
-                </LinearLayout>
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/spinner_background"
+                    android:spinnerMode="dropdown"
+                    android:padding="8dp"
+                    android:popupBackground="@drawable/spinner_dropdown_background" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
