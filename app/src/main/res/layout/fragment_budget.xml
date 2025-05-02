@@ -67,14 +67,5 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Floating Action Button for Adding New Budget -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add_budget"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:src="@drawable/pluss"
-        app:tint="#FFFFFF"
-        app:backgroundTint="#4CAF50"/>
+
 </FrameLayout>
