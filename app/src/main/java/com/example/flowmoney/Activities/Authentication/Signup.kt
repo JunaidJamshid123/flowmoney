@@ -1,11 +1,13 @@
 package com.example.flowmoney.Activities.Authentication
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -37,6 +39,7 @@ class Signup : AppCompatActivity() {
     private lateinit var btSignup: Button
     private lateinit var tvLogin: TextView
     private lateinit var cvGoogle: CardView
+    private lateinit var progressBar: ProgressBar
 
     private lateinit var auth: FirebaseAuth
     private lateinit var db: FirebaseFirestore
@@ -45,6 +48,7 @@ class Signup : AppCompatActivity() {
     private val TAG = "SignupActivity"
     private val RC_SIGN_IN = 9001
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -73,6 +77,12 @@ class Signup : AppCompatActivity() {
         tvLogin = findViewById(R.id.tvLogin)
         cvGoogle = findViewById(R.id.cvGoogle)
 
+        // Initialize progress bar - make sure to add this to your layout XML
+        progressBar = findViewById(R.id.progressBar)
+        if (progressBar == null) {
+            Log.w(TAG, "ProgressBar not found in layout")
+        }
+
         // Set click listeners
         btSignup.setOnClickListener {
             if (validateInputs()) {
@@ -88,6 +98,21 @@ class Signup : AppCompatActivity() {
 
         cvGoogle.setOnClickListener {
             signInWithGoogle()
+        }
+
+        // Check if we're coming from a Google Sign In in the Login activity
+        if (intent.getBooleanExtra("GOOGLE_SIGN_IN", false)) {
+            // Auto-fill fields with Google account info if available
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                etFullName.setText(currentUser.displayName ?: "")
+                etEmail.setText(currentUser.email ?: "")
+                etEmail.isEnabled = false // Don't allow changing email if coming from Google
+
+                // Generate a username suggestion from email
+                val emailPrefix = currentUser.email?.substringBefore("@")?.replace(".", "_") ?: ""
+                etUsername.setText(emailPrefix)
+            }
         }
     }
 
@@ -174,39 +199,69 @@ class Signup : AppCompatActivity() {
         val email = etEmail.text.toString().trim()
         val password = etPassword.text.toString()
 
+        // Show progress bar
+        progressBar.visibility = View.VISIBLE
+
+        // Disable signup button to prevent multiple clicks
+        btSignup.isEnabled = false
+
         // First check if username already exists
         checkIfUsernameExists(username) { usernameExists ->
             if (usernameExists) {
+                progressBar.visibility = View.GONE
+                btSignup.isEnabled = true
                 etUsername.error = "Username already taken"
                 etUsername.requestFocus()
             } else {
-                // Create user with email and password
-                auth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this) { task ->
-                        if (task.isSuccessful) {
-                            // Sign in success, update UI with the signed-in user's information
-                            Log.d(TAG, "createUserWithEmail:success")
-                            val firebaseUser = auth.currentUser
+                // Handle Google Sign In case differently
+                if (intent.getBooleanExtra("GOOGLE_SIGN_IN", false) && auth.currentUser != null) {
+                    // User is already authenticated with Google, just save profile
+                    val firebaseUser = auth.currentUser
 
-                            if (firebaseUser != null) {
-                                // Create User object
-                                val user = User(
-                                    userId = firebaseUser.uid,
-                                    fullName = fullName,
-                                    username = username,
-                                    email = email
-                                )
+                    if (firebaseUser != null) {
+                        // Create User object
+                        val user = User(
+                            userId = firebaseUser.uid,
+                            fullName = fullName,
+                            username = username,
+                            email = email,
+                            profileImageUrl = firebaseUser.photoUrl?.toString()
+                        ).createFromSocialLogin("google")
 
-                                // Save user to Firestore
-                                saveUserToFirestore(user)
-                            }
-                        } else {
-                            // If sign in fails, display a message to the user.
-                            Log.w(TAG, "createUserWithEmail:failure", task.exception)
-                            Toast.makeText(this, "Authentication failed: ${task.exception?.message}",
-                                Toast.LENGTH_SHORT).show()
-                        }
+                        // Save user to Firestore
+                        saveUserToFirestore(user)
                     }
+                } else {
+                    // Create user with email and password
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener(this) { task ->
+                            if (task.isSuccessful) {
+                                // Sign in success, update UI with the signed-in user's information
+                                Log.d(TAG, "createUserWithEmail:success")
+                                val firebaseUser = auth.currentUser
+
+                                if (firebaseUser != null) {
+                                    // Create User object
+                                    val user = User(
+                                        userId = firebaseUser.uid,
+                                        fullName = fullName,
+                                        username = username,
+                                        email = email
+                                    )
+
+                                    // Save user to Firestore
+                                    saveUserToFirestore(user)
+                                }
+                            } else {
+                                // If sign in fails, display a message to the user.
+                                progressBar.visibility = View.GONE
+                                btSignup.isEnabled = true
+                                Log.w(TAG, "createUserWithEmail:failure", task.exception)
+                                Toast.makeText(this, "Authentication failed: ${task.exception?.message}",
+                                    Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                }
             }
         }
     }
@@ -230,6 +285,11 @@ class Signup : AppCompatActivity() {
             .set(user.toMap())
             .addOnSuccessListener {
                 Log.d(TAG, "User profile created for ${user.userId}")
+
+                // Hide progress bar
+                progressBar.visibility = View.GONE
+                btSignup.isEnabled = true
+
                 Toast.makeText(this, "Registration successful!", Toast.LENGTH_SHORT).show()
 
                 // Navigate to main activity
@@ -239,12 +299,17 @@ class Signup : AppCompatActivity() {
                 finish()
             }
             .addOnFailureListener { e ->
+                // Hide progress bar
+                progressBar.visibility = View.GONE
+                btSignup.isEnabled = true
+
                 Log.w(TAG, "Error adding user to Firestore", e)
                 Toast.makeText(this, "Failed to save user data", Toast.LENGTH_SHORT).show()
             }
     }
 
     private fun signInWithGoogle() {
+        progressBar.visibility = View.VISIBLE
         val signInIntent = googleSignInClient.signInIntent
         startActivityForResult(signInIntent, RC_SIGN_IN)
     }
@@ -254,8 +319,14 @@ class Signup : AppCompatActivity() {
 
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent()
         if (requestCode == RC_SIGN_IN) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
-            handleGoogleSignInResult(task)
+            try {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                handleGoogleSignInResult(task)
+            } catch (e: Exception) {
+                progressBar.visibility = View.GONE
+                Log.e(TAG, "Google Sign In error", e)
+                Toast.makeText(this, "Google Sign In failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -265,8 +336,9 @@ class Signup : AppCompatActivity() {
             Log.d(TAG, "Google Sign In successful, account ID: ${account.id}")
             firebaseAuthWithGoogle(account.idToken!!)
         } catch (e: ApiException) {
-            Log.w(TAG, "Google sign in failed", e)
-            Toast.makeText(this, "Google Sign In failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            progressBar.visibility = View.GONE
+            Log.w(TAG, "Google sign in failed: code=${e.statusCode}", e)
+            Toast.makeText(this, "Google Sign In failed: Status code ${e.statusCode}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -284,26 +356,21 @@ class Signup : AppCompatActivity() {
                         db.collection("users").document(firebaseUser.uid)
                             .get()
                             .addOnSuccessListener { document ->
+                                progressBar.visibility = View.GONE
+
                                 if (!document.exists()) {
-                                    // New user - create User object
-                                    val displayName = firebaseUser.displayName ?: "User"
-                                    val email = firebaseUser.email ?: ""
+                                    // New user - Auto-fill fields with Google account info
+                                    etFullName.setText(firebaseUser.displayName ?: "")
+                                    etEmail.setText(firebaseUser.email ?: "")
+                                    etEmail.isEnabled = false // Don't allow changing email from Google
 
-                                    // Generate a username from the email
-                                    val username = email.substringBefore("@").replace(".", "_")
+                                    // Generate a username suggestion from email
+                                    val emailPrefix = firebaseUser.email?.substringBefore("@")?.replace(".", "_") ?: ""
+                                    etUsername.setText(emailPrefix)
 
-                                    val user = User(
-                                        userId = firebaseUser.uid,
-                                        fullName = displayName,
-                                        username = username,
-                                        email = email,
-                                        profileImageUrl = firebaseUser.photoUrl?.toString()
-                                    ).createFromSocialLogin("google")
-
-                                    // Save new user to Firestore
-                                    saveUserToFirestore(user)
+                                    Toast.makeText(this, "Please complete your profile", Toast.LENGTH_SHORT).show()
                                 } else {
-                                    // Existing user - just update login time
+                                    // Existing user - just update login time and redirect to main
                                     db.collection("users").document(firebaseUser.uid)
                                         .update("last_login_at", System.currentTimeMillis())
                                         .addOnSuccessListener {
@@ -316,12 +383,14 @@ class Signup : AppCompatActivity() {
                                 }
                             }
                             .addOnFailureListener { e ->
+                                progressBar.visibility = View.GONE
                                 Log.w(TAG, "Error checking user existence", e)
                                 Toast.makeText(this, "Failed to process sign in", Toast.LENGTH_SHORT).show()
                             }
                     }
                 } else {
                     // If sign in fails, display a message to the user.
+                    progressBar.visibility = View.GONE
                     Log.w(TAG, "signInWithCredential:failure", task.exception)
                     Toast.makeText(this, "Authentication failed: ${task.exception?.message}",
                         Toast.LENGTH_SHORT).show()

@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.google.gms.google.services)
+    id("org.jetbrains.kotlin.kapt") // ✅ Directly applied without alias
+
 }
 
 android {
@@ -54,7 +56,10 @@ dependencies {
 
     // Third-party libraries
     implementation("de.hdodenhof:circleimageview:3.1.0")
+    implementation ("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    kapt("com.github.bumptech.glide:compiler:4.16.0")
+    implementation(libs.firebase.storage)
 
     // Testing
     testImplementation(libs.junit)

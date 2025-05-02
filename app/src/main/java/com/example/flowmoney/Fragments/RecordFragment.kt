@@ -1,10 +1,15 @@
 package com.example.flowmoney.Fragments
 
+import android.app.Dialog
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.ArrayAdapter
+import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -16,7 +21,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 class RecordFragment : Fragment() {
 
     // View properties
-    private lateinit var dateSpinner: Spinner
     private lateinit var categorySpinner: Spinner
     private lateinit var sortSpinner: Spinner
     private lateinit var recyclerRecords: RecyclerView
@@ -62,7 +66,6 @@ class RecordFragment : Fragment() {
     }
 
     private fun setupSpinners() {
-
         // Category spinner setup
         val categoryOptions = arrayOf("All", "Food", "Transport", "Shopping", "Bills", "Entertainment", "Other")
         val categoryAdapter = ArrayAdapter(
@@ -100,9 +103,33 @@ class RecordFragment : Fragment() {
 
     private fun setupClickListeners() {
         fabAdd.setOnClickListener {
-            // Handle add transaction click
-            // For example, open a dialog or navigate to add transaction screen
+            showAddTransactionDialog()
         }
+    }
+
+    private fun showAddTransactionDialog() {
+        // Create dialog
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setCancelable(false)
+        dialog.setContentView(R.layout.activity_add_transaction)
+
+        // Make dialog background transparent to show rounded corners properly
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+
+        // Set dialog width to match parent with margins
+        val layoutParams = dialog.window?.attributes
+        layoutParams?.width = ViewGroup.LayoutParams.MATCH_PARENT
+        dialog.window?.attributes = layoutParams
+
+        // Set close button click listener
+        val btnClose = dialog.findViewById<ImageButton>(R.id.btn_close)
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // Show dialog
+        dialog.show()
     }
 
     // You can keep the companion object if needed for creating instances

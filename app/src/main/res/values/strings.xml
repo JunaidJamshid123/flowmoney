@@ -4,4 +4,5 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="default_web_client_id">837680702400-i725pk036lrsaaejr8nqrfkka5m7bht8.apps.googleusercontent.com</string>
 </resources>

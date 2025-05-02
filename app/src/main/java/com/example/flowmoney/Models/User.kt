@@ -1,6 +1,5 @@
 package com.example.flowmoney.Models
 
-import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.Exclude
 import com.google.firebase.firestore.IgnoreExtraProperties
 import com.google.firebase.firestore.PropertyName
@@ -8,7 +7,8 @@ import java.io.Serializable
 
 @IgnoreExtraProperties
 class User {
-    @DocumentId
+    // Removed @DocumentId annotation
+    @PropertyName("userId")
     var userId: String = ""
 
     @PropertyName("full_name")
@@ -25,6 +25,9 @@ class User {
 
     @PropertyName("profile_image_url")
     var profileImageUrl: String? = null
+
+    @PropertyName("address")
+    var address: String? = null
 
     @PropertyName("created_at")
     var createdAt: Long = System.currentTimeMillis()
@@ -62,6 +65,7 @@ class User {
         email: String,
         phoneNumber: String? = null,
         profileImageUrl: String? = null,
+        address: String? = null,
         isSocialLogin: Boolean = false,
         socialLoginType: String? = null
     ) {
@@ -71,6 +75,7 @@ class User {
         this.email = email
         this.phoneNumber = phoneNumber
         this.profileImageUrl = profileImageUrl
+        this.address = address
         this.isSocialLogin = isSocialLogin
         this.socialLoginType = socialLoginType
     }
@@ -99,6 +104,7 @@ class User {
             "email" to email,
             "phone_number" to phoneNumber,
             "profile_image_url" to profileImageUrl,
+            "address" to address,
             "created_at" to createdAt,
             "last_login_at" to lastLoginAt,
             "is_social_login" to isSocialLogin,
