@@ -90,28 +90,47 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 .get()
                 .addOnSuccessListener { documentSnapshot ->
                     if (documentSnapshot.exists()) {
-                        val userData = documentSnapshot.toObject(User::class.java)
-                        userData?.let {
-                            updateNavigationHeader(it)
-                        }
+                        // Create a User object from the document data
+                        val userData = User()
+                        userData.userId = documentSnapshot.id
+                        userData.fullName = documentSnapshot.getString("full_name") ?: ""
+                        userData.username = documentSnapshot.getString("username") ?: ""
+                        userData.email = documentSnapshot.getString("email") ?: ""
+                        userData.phoneNumber = documentSnapshot.getString("phone_number")
+                        userData.profileImageUrl = documentSnapshot.getString("profile_image_url")
+                        userData.address = documentSnapshot.getString("address")
+                        userData.isSocialLogin = documentSnapshot.getBoolean("is_social_login") ?: false
+                        userData.socialLoginType = documentSnapshot.getString("social_login_type")
+
+                        // Update the navigation header with user data
+                        updateNavigationHeader(userData)
                     } else {
                         // User document doesn't exist in Firestore
                         Toast.makeText(this, "User data not found", Toast.LENGTH_SHORT).show()
+                        // Show default values in the navigation header
+                        showDefaultNavigationHeader()
                     }
                 }
                 .addOnFailureListener { e ->
                     Toast.makeText(this, "Error loading user data: ${e.message}", Toast.LENGTH_SHORT).show()
+                    // Show default values in the navigation header
+                    showDefaultNavigationHeader()
                 }
         } ?: run {
             // User is not logged in
-            // You might want to show default values or redirect to login
-            val headerView = navigationView.getHeaderView(0)
-            val profileName = headerView.findViewById<TextView>(R.id.profile_name)
-            val profileEmail = headerView.findViewById<TextView>(R.id.profile_email)
-
-            profileName.text = "Guest User"
-            profileEmail.text = "Please sign in"
+            showDefaultNavigationHeader()
         }
+    }
+
+    private fun showDefaultNavigationHeader() {
+        val headerView = navigationView.getHeaderView(0)
+        val profileName = headerView.findViewById<TextView>(R.id.profile_name)
+        val profileEmail = headerView.findViewById<TextView>(R.id.profile_email)
+        val profileImageView = headerView.findViewById<CircleImageView>(R.id.profile_image)
+
+        profileName.text = "Guest User"
+        profileEmail.text = "Please sign in"
+        profileImageView.setImageResource(R.drawable.default_profile)
     }
 
     private fun updateNavigationHeader(user: User) {
@@ -128,30 +147,43 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         profileEmailTextView.text = user.email
 
         // Load profile image if available
-        user.profileImageUrl?.let { imageUrl ->
-            if (imageUrl.startsWith("data:image")) {
-                // Handle base64 encoded image
-                try {
-                    // Extract the base64 string (remove the data:image/xxx;base64, part)
-                    val base64Image = imageUrl.substring(imageUrl.indexOf(",") + 1)
-                    val decodedString = Base64.decode(base64Image, Base64.DEFAULT)
-                    val bitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
-                    profileImageView.setImageBitmap(bitmap)
-                } catch (e: Exception) {
-                    // If decoding fails, use default image
-                    profileImageView.setImageResource(R.drawable.default_profile)
-                    e.printStackTrace()
-                }
-            } else {
-                // If it's a regular URL, you might want to use an image loading library
-                // For now, we'll just set the default image
-                profileImageView.setImageResource(R.drawable.default_profile)
+        if (!user.profileImageUrl.isNullOrEmpty()) {
+            try {
+                // Check if the image is a Base64 string
+                if (user.profileImageUrl!!.length > 100) { // Likely a Base64 string if very long
+                    try {
+                        val imageBytes = Base64.decode(user.profileImageUrl, Base64.DEFAULT)
+                        val decodedBitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 
-                // Uncomment and add implementation for Glide or Picasso if you're using them
-                 Glide.with(this).load(imageUrl).into(profileImageView)
-                 //Picasso.get().load(imageUrl).into(profileImageView)
+                        if (decodedBitmap != null) {
+                            profileImageView.setImageBitmap(decodedBitmap)
+                        } else {
+                            // If bitmap decoding fails, use default image
+                            profileImageView.setImageResource(R.drawable.default_profile)
+                        }
+                    } catch (e: Exception) {
+                        // If Base64 decoding fails, try loading as URL
+                        Glide.with(this)
+                            .load(user.profileImageUrl)
+                            .placeholder(R.drawable.default_profile)
+                            .error(R.drawable.default_profile)
+                            .into(profileImageView)
+                    }
+                } else {
+                    // Treat as URL if not Base64
+                    Glide.with(this)
+                        .load(user.profileImageUrl)
+                        .placeholder(R.drawable.default_profile)
+                        .error(R.drawable.default_profile)
+                        .into(profileImageView)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // If all attempts fail, use default image
+                profileImageView.setImageResource(R.drawable.default_profile)
             }
-        } ?: run {
+        } else {
             // No profile image URL, use default
             profileImageView.setImageResource(R.drawable.default_profile)
         }
@@ -248,6 +280,13 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     // Call this method when user logs in/out to refresh the navigation header
     fun refreshUserData() {
+        loadUserData()
+    }
+
+    // This method should be called from ProfileActivity after profile update
+    override fun onResume() {
+        super.onResume()
+        // Reload user data when returning to MainActivity
         loadUserData()
     }
 }
