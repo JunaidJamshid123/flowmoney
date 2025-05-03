@@ -93,11 +93,9 @@ class CategoryFragment : Fragment() {
             // Handle save action here
             // Get input values and save category
             val categoryName = dialog.findViewById<EditText>(R.id.etName).text.toString()
-            val isIncome = dialog.findViewById<RadioGroup>(R.id.rgType).checkedRadioButtonId == R.id.rbIncome
-            val selectedIconId = dialog.findViewById<RadioGroup>(R.id.rgIcons).checkedRadioButtonId
 
             // Process and save the category
-            saveCategory(categoryName, isIncome, selectedIconId)
+
 
             // Close dialog
             dialog.dismiss()
