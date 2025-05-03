@@ -131,71 +131,191 @@
                 app:layout_constraintTop_toBottomOf="@+id/tvIconLabel">
 
                 <LinearLayout
+                    android:id="@+id/iconContainer"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <RadioGroup
-                        android:id="@+id/rgIcons"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                    <FrameLayout
+                        android:id="@+id/mobileBankingContainer"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="@drawable/icon_container_background">
 
-                        <RadioButton
-                            android:id="@+id/rbCash"
-                            android:layout_width="70dp"
-                            android:layout_height="70dp"
-                            android:layout_marginEnd="8dp"
-                            android:background="@drawable/icon_selector"
-                            android:button="@null"
-                            android:checked="true"
-                            android:drawableTop="@drawable/ic_cash"
-                            android:gravity="center"
-                            android:padding="8dp" />
+                        <ImageView
+                            android:id="@+id/ivMobileBanking"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Mobile Banking"
+                            android:src="@drawable/mobilebanking" />
 
-                        <RadioButton
-                            android:id="@+id/rbCreditCard"
-                            android:layout_width="70dp"
-                            android:layout_height="70dp"
-                            android:layout_marginEnd="8dp"
-                            android:background="@drawable/icon_selector"
-                            android:button="@null"
-                            android:drawableTop="@drawable/ic_cash"
-                            android:gravity="center"
-                            android:padding="8dp" />
+                        <ImageView
+                            android:id="@+id/ivMobileBankingSelected"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="bottom|end"
+                            android:src="@drawable/ic_selected"
+                            android:visibility="visible" />
+                    </FrameLayout>
 
-                        <RadioButton
-                            android:id="@+id/rbPiggyBank"
-                            android:layout_width="70dp"
-                            android:layout_height="70dp"
-                            android:layout_marginEnd="8dp"
-                            android:background="@drawable/icon_selector"
-                            android:button="@null"
-                            android:drawableTop="@drawable/ic_cash"
-                            android:gravity="center"
-                            android:padding="8dp" />
+                    <FrameLayout
+                        android:id="@+id/creditCardContainer"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="@drawable/icon_container_background">
 
-                        <RadioButton
-                            android:id="@+id/rbMastercard"
-                            android:layout_width="70dp"
-                            android:layout_height="70dp"
-                            android:layout_marginEnd="8dp"
-                            android:background="@drawable/icon_selector"
-                            android:button="@null"
-                            android:drawableTop="@drawable/ic_cash"
-                            android:gravity="center"
-                            android:padding="8dp" />
+                        <ImageView
+                            android:id="@+id/ivCreditCard"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Credit Card"
+                            android:src="@drawable/creditcard" />
 
-                        <RadioButton
-                            android:id="@+id/rbVisa"
-                            android:layout_width="70dp"
-                            android:layout_height="70dp"
-                            android:background="@drawable/icon_selector"
-                            android:button="@null"
-                            android:drawableTop="@drawable/ic_cash"
-                            android:gravity="center"
-                            android:padding="8dp" />
-                    </RadioGroup>
+                        <ImageView
+                            android:id="@+id/ivCreditCardSelected"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="bottom|end"
+                            android:src="@drawable/ic_selected"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/onlineWalletContainer"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="@drawable/icon_container_background">
+
+                        <ImageView
+                            android:id="@+id/ivOnlineWallet"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Online Wallet"
+                            android:src="@drawable/onlinewallet" />
+
+                        <ImageView
+                            android:id="@+id/ivOnlineWalletSelected"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="bottom|end"
+                            android:src="@drawable/ic_selected"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/bitcoinContainer"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="@drawable/icon_container_background">
+
+                        <ImageView
+                            android:id="@+id/ivBitcoin"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Bitcoin"
+                            android:src="@drawable/bitcoin" />
+
+                        <ImageView
+                            android:id="@+id/ivBitcoinSelected"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="bottom|end"
+                            android:src="@drawable/ic_selected"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/smartphoneContainer"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="@drawable/icon_container_background">
+
+                        <ImageView
+                            android:id="@+id/ivSmartphone"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Smartphone"
+                            android:src="@drawable/smartphone" />
+
+                        <ImageView
+                            android:id="@+id/ivSmartphoneSelected"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="bottom|end"
+                            android:src="@drawable/ic_selected"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/bankContainer"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:layout_marginEnd="8dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="@drawable/icon_container_background">
+
+                        <ImageView
+                            android:id="@+id/ivBank"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Bank"
+                            android:src="@drawable/bank" />
+
+                        <ImageView
+                            android:id="@+id/ivBankSelected"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="bottom|end"
+                            android:src="@drawable/ic_selected"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <FrameLayout
+                        android:id="@+id/cashContainer"
+                        android:layout_width="70dp"
+                        android:layout_height="70dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:background="@drawable/icon_container_background">
+
+                        <ImageView
+                            android:id="@+id/ivCash"
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="Cash"
+                            android:src="@drawable/cash" />
+
+                        <ImageView
+                            android:id="@+id/ivCashSelected"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="bottom|end"
+                            android:src="@drawable/ic_selected"
+                            android:visibility="gone" />
+                    </FrameLayout>
                 </LinearLayout>
             </HorizontalScrollView>
 

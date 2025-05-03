@@ -6,10 +6,11 @@
     android:layout_height="match_parent"
     tools:context=".Fragments.AccountsFragment">
 
+    <!-- Improved header background with rounded corners at bottom -->
     <ImageView
         android:id="@+id/header_background"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
+        android:layout_height="200dp"
         android:scaleType="centerCrop"
         android:src="@drawable/background"
         android:layout_alignParentTop="true" />
@@ -19,7 +20,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Header Title -->
+        <!-- Header Title with improved styling -->
         <TextView
             android:id="@+id/tv_accounts_title"
             android:layout_width="wrap_content"
@@ -27,14 +28,15 @@
             android:layout_marginStart="20dp"
             android:layout_marginTop="20dp"
             android:text="Accounts"
-            android:textColor="#AAAAAA"
-            android:textSize="16sp" />
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:fontFamily="sans-serif-medium" />
 
         <!-- Connect Account Header with Back Button -->
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="4dp"
             android:background="@android:color/transparent">
 
             <ImageButton
@@ -43,7 +45,7 @@
                 android:layout_height="48dp"
                 android:layout_centerVertical="true"
                 android:layout_marginStart="16dp"
-                android:background="@android:color/transparent"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_revert"
                 app:tint="#FFFFFF" />
 
@@ -53,56 +55,137 @@
                 android:layout_centerInParent="true"
                 android:text="Connect Account"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textSize="20sp"
+                android:fontFamily="sans-serif-medium" />
         </RelativeLayout>
 
-        <!-- Tab Layout for Cards and Accounts -->
+        <!-- Tab Layout for filtering accounts -->
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tab_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:layout_marginHorizontal="20dp"
-            android:background="#F5F5F5"
-            app:tabBackground="@android:color/transparent"
-            app:tabIndicatorHeight="0dp"
-            app:tabMode="fixed"
-            app:tabGravity="fill"
-            app:tabRippleColor="@null">
+            android:layout_marginTop="8dp"
+            android:layout_marginHorizontal="16dp"
+            android:background="@android:color/transparent"
+            app:tabTextColor="#80FFFFFF"
+            app:tabSelectedTextColor="#FFFFFF"
+            app:tabIndicatorColor="#FFFFFF"
+            app:tabMode="scrollable">
 
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Cards" />
+                android:text="All" />
 
             <com.google.android.material.tabs.TabItem
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Accounts" />
+                android:text="Bank" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Cash" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="E-Wallet" />
+
+            <com.google.android.material.tabs.TabItem
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Credit" />
         </com.google.android.material.tabs.TabLayout>
 
-        <!-- RecyclerView for Account Items -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_accounts"
+        <!-- Account Header Label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:layout_marginHorizontal="20dp"
+            android:text="Your Accounts"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <!-- Card for RecyclerView with elevation -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
             android:layout_marginHorizontal="16dp"
-            android:clipToPadding="false"
-            android:paddingBottom="80dp" />
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp">
 
-        <!-- Add New Account Button -->
+            <!-- RecyclerView for Account Items -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_accounts"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingVertical="8dp"
+                android:paddingHorizontal="4dp" />
+
+            <!-- Empty State View (can be shown when no accounts) -->
+            <LinearLayout
+                android:id="@+id/empty_state_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:src="@drawable/trash"
+                    android:alpha="0.5" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="No accounts added yet"
+                    android:textSize="18sp"
+                    android:textColor="#757575" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:layout_marginHorizontal="32dp"
+                    android:text="Add your first account to start tracking your finances"
+                    android:textSize="14sp"
+                    android:textColor="#9E9E9E" />
+            </LinearLayout>
+
+            <!-- Loading Indicator -->
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </androidx.cardview.widget.CardView>
+
+        <!-- Add New Account Button with improved styling -->
         <Button
             android:id="@+id/btn_add_account"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginHorizontal="24dp"
+            android:layout_marginTop="16dp"
             android:layout_marginBottom="24dp"
             android:text="Add new account"
             android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:fontFamily="sans-serif-medium"
             android:textAllCaps="false"
-            app:background="@drawable/button_green_background" />
+            app:cornerRadius="28dp"
+            android:background="@drawable/button_green_background" />
     </LinearLayout>
 </FrameLayout>
