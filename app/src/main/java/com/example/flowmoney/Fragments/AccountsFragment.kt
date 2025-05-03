@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.R
@@ -21,6 +22,7 @@ import com.example.flowmoney.AddNewAccount
 import com.example.flowmoney.Models.Account
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 
 class AccountsFragment : Fragment() {
@@ -32,6 +34,7 @@ class AccountsFragment : Fragment() {
     private lateinit var backButton: ImageButton
     private lateinit var tabLayout: TabLayout
     private lateinit var emptyStateLayout: View
+    private lateinit var emptyStateMessage: TextView
     private lateinit var progressBar: View
 
     // Firebase
@@ -43,6 +46,9 @@ class AccountsFragment : Fragment() {
 
     // Current filter
     private var currentFilter: String? = null
+
+    // Firestore listener
+    private var accountsListener: ListenerRegistration? = null
 
     // Use ActivityResultLauncher for handling the result from AddNewAccount activity
     private val addAccountLauncher = registerForActivityResult(
@@ -72,6 +78,9 @@ class AccountsFragment : Fragment() {
         tabLayout = view.findViewById(R.id.tab_layout)
         emptyStateLayout = view.findViewById(R.id.empty_state_layout)
         progressBar = view.findViewById(R.id.progress_bar)
+
+        // Find the empty state message TextView if it exists
+        emptyStateMessage = emptyStateLayout.findViewById(R.id.nav_trash) ?: TextView(requireContext())
 
         // Setup adapter
         setupRecyclerView()
@@ -174,6 +183,7 @@ class AccountsFragment : Fragment() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
             Log.e(TAG, "No user is logged in")
+            showEmptyState("Please log in to view accounts")
             return
         }
 
@@ -181,21 +191,59 @@ class AccountsFragment : Fragment() {
         progressBar.visibility = View.VISIBLE
         emptyStateLayout.visibility = View.GONE
 
-        val accountsCollection = firestore.collection("accounts")
+        try {
+            // Remove any existing listener
+            accountsListener?.remove()
 
-        // Create base query
-        var query = accountsCollection
-            .whereEqualTo("user_id", currentUser.uid)
-            .orderBy("created_at", Query.Direction.DESCENDING)
+            val accountsCollection = firestore.collection("accounts")
 
-        // Apply filter if specified
-        if (!filter.isNullOrEmpty()) {
-            query = query.whereEqualTo("account_type", filter)
-        }
+            // Create base query - IMPORTANT: Apply all filters before orderBy
+            var query = accountsCollection.whereEqualTo("user_id", currentUser.uid)
 
-        query.get()
-            .addOnSuccessListener { documents ->
-                val accounts = documents.mapNotNull { doc ->
+            // Apply filter if specified
+            if (!filter.isNullOrEmpty()) {
+                query = query.whereEqualTo("account_type", filter)
+            }
+
+            // Add ordering last
+            query = query.orderBy("created_at", Query.Direction.DESCENDING)
+
+            // Use a listener for real-time updates instead of one-time get()
+            accountsListener = query.addSnapshotListener { snapshot, e ->
+                // Hide loading indicator
+                progressBar.visibility = View.GONE
+
+                if (e != null) {
+                    Log.e(TAG, "Error listening for accounts", e)
+
+                    // Show a more specific error message for index errors
+                    val errorMsg = when {
+                        e.message?.contains("FAILED_PRECONDITION") == true &&
+                                e.message?.contains("requires an index") == true -> {
+                            "Database index needed. Please visit Firebase console or wait a few minutes and try again."
+                        }
+                        else -> "Failed to load accounts: ${e.message}"
+                    }
+
+                    Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                    showEmptyState("Couldn't load accounts")
+                    return@addSnapshotListener
+                }
+
+                if (snapshot == null || snapshot.isEmpty) {
+                    // Show empty state with appropriate message
+                    val filterName = when (filter) {
+                        "bank" -> "bank "
+                        "cash" -> "cash "
+                        "e-wallet" -> "e-wallet "
+                        "credit" -> "credit "
+                        else -> ""
+                    }
+                    showEmptyState("No ${filterName}accounts found")
+                    return@addSnapshotListener
+                }
+
+                val accounts = snapshot.mapNotNull { doc ->
                     try {
                         val account = doc.toObject(Account::class.java)
                         // Ensure accountId is set if it's not coming from Firestore
@@ -212,29 +260,31 @@ class AccountsFragment : Fragment() {
                 // Update the adapter with the new data
                 accountsAdapter.submitList(accounts)
 
-                // Hide loading indicator
-                progressBar.visibility = View.GONE
-
-                // Show empty state if no accounts
+                // Show/hide empty state based on results
                 if (accounts.isEmpty()) {
-                    // Show empty state
-                    emptyStateLayout.visibility = View.VISIBLE
-                    Log.d(TAG, "No accounts found")
+                    showEmptyState("No accounts found")
                 } else {
-                    // Hide empty state
                     emptyStateLayout.visibility = View.GONE
                     Log.d(TAG, "Loaded ${accounts.size} accounts")
                 }
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error loading accounts", e)
-                Toast.makeText(context, "Failed to load accounts: ${e.message}", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error in loadAccounts", e)
+            Toast.makeText(context, "An unexpected error occurred", Toast.LENGTH_SHORT).show()
+            progressBar.visibility = View.GONE
+            showEmptyState("Something went wrong")
+        }
+    }
 
-                // Hide loading indicator
-                progressBar.visibility = View.GONE
-                // Show empty state on error
-                emptyStateLayout.visibility = View.VISIBLE
-            }
+    private fun showEmptyState(message: String) {
+        emptyStateLayout.visibility = View.VISIBLE
+
+        // If TextView exists in your empty state layout, update its text
+        try {
+            emptyStateMessage.text = message
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not update empty state message", e)
+        }
     }
 
     private fun launchAddAccountActivity() {
@@ -245,7 +295,15 @@ class AccountsFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         // Refresh accounts data when fragment becomes visible
-        loadAccounts(currentFilter)
+        if (accountsListener == null) {
+            loadAccounts(currentFilter)
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Clean up the listener to prevent memory leaks
+        accountsListener?.remove()
     }
 
     companion object {
