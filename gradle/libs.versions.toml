@@ -16,8 +16,10 @@ credentials = "1.5.0"
 credentialsPlayServicesAuth = "1.5.0"
 googleid = "1.1.1"
 firebaseStorage = "21.0.1"
+composeCompiler = "2.0.1"
 
 [libraries]
+jetbrains-compose-compiler = { group = "org.jetbrains.compose.compiler", name = "compiler", version.ref = "composeCompiler" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -37,6 +39,7 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage", v
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+jetbrains-compose-compiler = { id = "org.jetbrains.compose.compiler", version.ref = "composeCompiler" }
 
 google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }
 

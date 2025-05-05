@@ -35,6 +35,12 @@ class User {
     @PropertyName("last_login_at")
     var lastLoginAt: Long = System.currentTimeMillis()
 
+    @PropertyName("last_logout_at")
+    var lastLogoutAt: Long? = null
+
+    @PropertyName("is_logged_out")
+    var isLoggedOut: Boolean = false
+
     @PropertyName("is_social_login")
     var isSocialLogin: Boolean = false
 
@@ -92,6 +98,14 @@ class User {
     @Exclude
     fun updateLoginTime() {
         this.lastLoginAt = System.currentTimeMillis()
+        this.isLoggedOut = false
+    }
+
+    // Helper method to mark user as logged out
+    @Exclude
+    fun markAsLoggedOut() {
+        this.lastLogoutAt = System.currentTimeMillis()
+        this.isLoggedOut = true
     }
 
     // Convert to HashMap for Firestore (useful for updates)
@@ -107,6 +121,8 @@ class User {
             "address" to address,
             "created_at" to createdAt,
             "last_login_at" to lastLoginAt,
+            "last_logout_at" to lastLogoutAt,
+            "is_logged_out" to isLoggedOut,
             "is_social_login" to isSocialLogin,
             "social_login_type" to socialLoginType
         )

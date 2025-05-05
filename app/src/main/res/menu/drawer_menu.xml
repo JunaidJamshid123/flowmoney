@@ -30,9 +30,9 @@
                 android:icon="@drawable/profile_user"
                 android:title="Profile" />
             <item
-                android:id="@+id/nav_login"
+                android:id="@+id/nav_logout"
                 android:icon="@drawable/logouttt"
-                android:title="Login" />
+                android:title="Logout" />
         </menu>
     </item>
 

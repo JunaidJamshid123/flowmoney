@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -16,11 +15,13 @@ import com.example.flowmoney.Activities.Frams.Fram1
 import com.example.flowmoney.MainActivity
 import com.example.flowmoney.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class SplashScreen : AppCompatActivity() {
     private val splashTimeout = 2500L  // 2.5 seconds
     private val TAG = "SplashScreen"
     private lateinit var auth: FirebaseAuth
+    private lateinit var db: FirebaseFirestore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +30,7 @@ class SplashScreen : AppCompatActivity() {
 
         // Initialize Firebase Auth
         auth = FirebaseAuth.getInstance()
+        db = FirebaseFirestore.getInstance()
 
         // Initialize views
         val logoContainer = findViewById<CardView>(R.id.logo_container)
@@ -61,48 +63,74 @@ class SplashScreen : AppCompatActivity() {
         val currentUser = auth.currentUser
 
         if (currentUser != null) {
-            // User is already logged in
-            Log.d(TAG, "User already logged in: ${currentUser.uid}")
+            // User is logged in, but check if it's a valid session by confirming in Firestore
+            // This handles the case where user logged out in a previous session but Firebase Auth
+            // still has a cached authentication state
+            db.collection("users").document(currentUser.uid)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        // Valid user session exists, check if any logout flag is set
+                        val isLoggedOut = document.getBoolean("is_logged_out") ?: false
 
-            // Check if email is verified if you want to enforce this
-            if (currentUser.isEmailVerified || isUserFromSocialLogin()) {
-                // Navigate to main activity
-                val intent = Intent(this, MainActivity::class.java)
-                startActivity(intent)
-                finish()
-            } else {
-                // Navigate to login and suggest verification
-                val intent = Intent(this, Login::class.java)
-                intent.putExtra("SHOW_VERIFICATION_REMINDER", true)
-                startActivity(intent)
-                finish()
-            }
+                        if (isLoggedOut) {
+                            // User explicitly logged out in previous session
+                            // Clear Firebase Auth state and navigate to login
+                            auth.signOut()
+                            navigateToLogin()
+                        } else {
+                            // User is properly logged in, update login time and proceed to main
+                            updateLastLoginTime(currentUser.uid)
+                            navigateToMain()
+                        }
+                    } else {
+                        // User doesn't exist in Firestore despite Auth token - potential issue
+                        // This might happen if user was deleted from backend but local auth persisted
+                        auth.signOut()
+                        navigateToLogin()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    // Failed to check user in Firestore - network issue likely
+                    Log.e(TAG, "Error checking user session", e)
+                    // Still navigate to main if we have a local auth token - can verify again later
+                    navigateToMain()
+                }
         } else {
-            // User is not logged in
-            Log.d(TAG, "No user logged in, showing onboarding")
-
-            // Navigate to onboarding/intro frame
-            val intent = Intent(this, Fram1::class.java)
-            startActivity(intent)
-            finish()
+            // No user is logged in, show onboarding or login screens
+            navigateToOnboarding()
         }
     }
 
-    private fun isUserFromSocialLogin(): Boolean {
-        // Check if the user signed in with a provider other than email/password
-        val currentUser = auth.currentUser ?: return false
-        val providerData = currentUser.providerData
-
-        for (profile in providerData) {
-            val providerId = profile.providerId
-            if (providerId == "google.com" ||
-                providerId == "facebook.com" ||
-                providerId == "apple.com"
-            ) {
-                return true
+    private fun updateLastLoginTime(userId: String) {
+        db.collection("users").document(userId)
+            .update("last_login_at", System.currentTimeMillis(), "is_logged_out", false)
+            .addOnFailureListener { e ->
+                Log.w(TAG, "Error updating last login time", e)
             }
-        }
+    }
 
-        return false
+    private fun navigateToMain() {
+        Log.d(TAG, "User logged in, navigating to MainActivity: ${auth.currentUser?.uid}")
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+
+    private fun navigateToLogin() {
+        Log.d(TAG, "No active session, navigating to Login")
+        val intent = Intent(this, Login::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
+    }
+
+    private fun navigateToOnboarding() {
+        Log.d(TAG, "First time user, navigating to onboarding")
+        val intent = Intent(this, Fram1::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 }

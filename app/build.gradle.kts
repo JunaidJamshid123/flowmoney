@@ -5,11 +5,20 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
     id("org.jetbrains.kotlin.kapt") // ✅ Directly applied without alias
 
+
+
 }
 
 android {
     namespace = "com.example.flowmoney"
     compileSdk = 35
+
+
+
+    buildFeatures {
+        viewBinding = true
+        compose = false // DISABLE compose here
+    }
 
     defaultConfig {
         applicationId = "com.example.flowmoney"
@@ -38,6 +47,10 @@ android {
         jvmTarget = "11"
     }
 }
+// Configure the Compose compiler version
+
+
+
 
 dependencies {
     implementation(libs.androidx.core.ktx)

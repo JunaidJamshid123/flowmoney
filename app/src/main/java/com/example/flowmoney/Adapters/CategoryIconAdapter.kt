@@ -65,7 +65,7 @@ class CategoryIconAdapter(
                 cardView.strokeColor = itemView.context.getColor(R.color.light_gray) // Light gray for unselected
                 cardView.strokeWidth = 1
                 cardView.setCardBackgroundColor(itemView.context.getColor(R.color.light_gray))
-                iconImageView.setColorFilter(itemView.context.getColor(R.color.gray_text))
+                iconImageView.setColorFilter(itemView.context.getColor(R.color.light_gray))
             }
         }
     }
