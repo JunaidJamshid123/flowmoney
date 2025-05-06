@@ -18,10 +18,14 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.flowmoney.Adapters.CategoryAdapter
 import com.example.flowmoney.Adapters.CategoryIconAdapter
+import com.example.flowmoney.Models.Category
 import com.example.flowmoney.R
+import com.example.flowmoney.utlities.FirestoreUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 
 class CategoryFragment : Fragment() {
@@ -30,6 +34,9 @@ class CategoryFragment : Fragment() {
     private lateinit var balanceTextView: TextView
     private lateinit var addCategoryButton: FloatingActionButton
     private lateinit var backButton: CardView
+    private lateinit var progressIndicator: CircularProgressIndicator
+    private lateinit var categoryAdapter: CategoryAdapter
+    private val categories = mutableListOf<Category>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -43,10 +50,9 @@ class CategoryFragment : Fragment() {
         addCategoryButton = view.findViewById(R.id.fab_add_category)
         backButton = view.findViewById(R.id.cv_back_button)
 
+
         // Set up RecyclerView
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        // You would set your adapter here later
-        // recyclerView.adapter = yourAdapter
+        setupRecyclerView()
 
         // Set click listener for add category button
         addCategoryButton.setOnClickListener {
@@ -58,7 +64,41 @@ class CategoryFragment : Fragment() {
             activity?.onBackPressed()
         }
 
+        // Load categories from Firestore
+        loadCategories()
+
         return view
+    }
+
+    private fun setupRecyclerView() {
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        categoryAdapter = CategoryAdapter(categories) { category ->
+            // Handle category click - can be implemented later
+            Toast.makeText(context, "Selected: ${category.name}", Toast.LENGTH_SHORT).show()
+        }
+        recyclerView.adapter = categoryAdapter
+    }
+
+    private fun loadCategories() {
+
+
+        FirestoreUtils.getAllCategories(
+            onSuccess = { fetchedCategories ->
+
+                categories.clear()
+                categories.addAll(fetchedCategories)
+                categoryAdapter.notifyDataSetChanged()
+
+                if (categories.isEmpty()) {
+                    // Show empty state if needed
+                    Log.d("CategoryFragment", "No categories found")
+                }
+            },
+            onFailure = { errorMessage ->
+
+                Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     private fun showAddCategoryDialog() {
@@ -88,6 +128,7 @@ class CategoryFragment : Fragment() {
             val btnCancel = dialog.findViewById<MaterialButton>(R.id.btnCancel)
             val btnSave = dialog.findViewById<MaterialButton>(R.id.btnSave)
 
+
             // Variable to store selected icon
             var selectedIconResId = R.drawable.cash // Default icon
 
@@ -109,17 +150,40 @@ class CategoryFragment : Fragment() {
                     return@setOnClickListener
                 }
 
-                // Save the category with the selected icon
-                saveCategory(categoryName, false, selectedIconResId)
+                // Show progress indicator
 
-                // Show confirmation
-                Toast.makeText(context, "Category saved: $categoryName", Toast.LENGTH_SHORT).show()
+                btnSave.isEnabled = false
+                btnCancel.isEnabled = false
 
-                // Close dialog
-                dialog.dismiss()
+                // Save category to Firestore
+                context?.let { ctx ->
+                    FirestoreUtils.saveCategory(
+                        context = ctx,
+                        name = categoryName,
+                        iconResourceId = selectedIconResId,
+                        isIncome = false, // Default to expense
+                        onSuccess = { newCategory ->
 
-                // Refresh categories list
-                refreshCategoriesList()
+
+                            // Add to local list and notify adapter
+                            categories.add(newCategory)
+                            categoryAdapter.notifyItemInserted(categories.size - 1)
+
+                            // Show confirmation
+                            Toast.makeText(context, "Category saved: ${newCategory.name}", Toast.LENGTH_SHORT).show()
+
+                            // Close dialog
+                            dialog.dismiss()
+                        },
+                        onFailure = { errorMessage ->
+
+                            btnSave.isEnabled = true
+                            btnCancel.isEnabled = true
+
+                            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
             }
 
             dialog.show()
@@ -169,15 +233,7 @@ class CategoryFragment : Fragment() {
         }
     }
 
-    private fun saveCategory(name: String, isIncome: Boolean, iconId: Int) {
-        // TODO: Implement saving the category to your data source (Firebase, etc.)
-        Log.d("CategoryFragment", "Saving category: $name with icon: $iconId")
-    }
 
-    private fun refreshCategoriesList() {
-        // TODO: Refresh the RecyclerView with updated data
-        Log.d("CategoryFragment", "Refreshing categories list")
-    }
 
     companion object {
         @JvmStatic
