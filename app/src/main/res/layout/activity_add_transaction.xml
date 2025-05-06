@@ -12,10 +12,22 @@
     <ImageView
         android:id="@+id/header_background"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:scaleType="centerCrop"
+        android:layout_height="80dp"
         android:background="@drawable/background"
         android:layout_alignParentTop="true" />
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/title_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:text="Add Transaction"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
 
     <!-- Close Button -->
     <ImageButton
@@ -29,273 +41,260 @@
         android:src="@drawable/share"
         android:contentDescription="Close" />
 
-    <!-- Main Content Card -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/card_content"
+    <!-- Main Content ScrollView -->
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="60dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="4dp">
+        android:layout_height="match_parent"
+        android:layout_below="@id/header_background"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
-        <LinearLayout
+        <!-- Main Content Card -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/card_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp">
 
-            <!-- Category Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="CATEGORY"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
-
-            <RelativeLayout
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/spinner_background"
-                android:padding="8dp"
-                android:layout_marginBottom="16dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:background="@drawable/circle_background"
-                        android:padding="6dp"
-                        android:src="@drawable/sort_descending" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Shopping"
-                        android:textSize="16sp"
-                        android:textColor="#212121"
-                        android:layout_marginStart="8dp" />
-                </LinearLayout>
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:src="@drawable/ic_dropdown" />
-            </RelativeLayout>
-
-            <!-- Account Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ACCOUNT"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/spinner_background"
-                android:padding="12dp"
-                android:layout_marginBottom="16dp">
-
+                <!-- Category Field -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Cash"
-                    android:textSize="16sp"
-                    android:textColor="#212121" />
+                    android:text="CATEGORY"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="4dp" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:src="@drawable/ic_dropdown" />
-            </RelativeLayout>
-
-            <!-- Transaction Type Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="TYPE OF TRANSACTION"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
-
-            <RadioGroup
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp">
-
-                <RadioButton
-                    android:id="@+id/radio_expense"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Expense"
-                    android:checked="true"
-                    android:layout_marginEnd="16dp" />
-
-                <RadioButton
-                    android:id="@+id/radio_income"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Income" />
-            </RadioGroup>
-
-            <!-- Amount Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="AMOUNT"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/edit_text_background"
-                android:padding="12dp"
-                android:layout_marginBottom="16dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="$"
-                    android:textSize="16sp"
-                    android:textColor="#212121" />
-
-                <EditText
+                <Spinner
+                    android:id="@+id/category_spinner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp"
-                    android:layout_marginEnd="50dp"
-                    android:background="@null"
-                    android:hint="0.00"
-                    android:inputType="numberDecimal"
-                    android:text="48.00"
-                    android:textColor="#212121"
-                    android:textSize="16sp" />
+                    android:background="@drawable/spinner_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp" />
 
+                <!-- Account Field -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:text="Clear"
-                    android:textColor="#009688"
-                    android:textSize="14sp" />
-            </RelativeLayout>
+                    android:text="ACCOUNT"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="4dp" />
 
-            <!-- Date Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="DATE"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
+                <Spinner
+                    android:id="@+id/account_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/spinner_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp" />
 
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/edit_text_background"
-                android:padding="12dp"
-                android:layout_marginBottom="16dp">
-
+                <!-- Transaction Type Field -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tue, 22 Feb 2022"
-                    android:textSize="16sp"
-                    android:textColor="#212121" />
+                    android:text="TYPE OF TRANSACTION"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="4dp" />
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:src="@drawable/calendarr" />
-            </RelativeLayout>
-
-            <!-- Invoice Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="INVOICE"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/dashed_border"
-                android:padding="12dp"
-                android:layout_marginBottom="16dp">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
+                <RadioGroup
+                    android:id="@+id/transaction_type_group"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_centerInParent="true"
-                    android:gravity="center"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_add_circle"
-                        android:layout_marginEnd="8dp" />
-
-                    <TextView
+                    <RadioButton
+                        android:id="@+id/radio_expense"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Add Invoice"
-                        android:textColor="#757575"
+                        android:text="Expense"
+                        android:checked="true"
+                        android:layout_marginEnd="16dp" />
+
+                    <RadioButton
+                        android:id="@+id/radio_income"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Income"
+                        android:layout_marginEnd="16dp" />
+
+                    <RadioButton
+                        android:id="@+id/radio_saving"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Saving" />
+                </RadioGroup>
+
+                <!-- Amount Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AMOUNT"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="4dp" />
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <TextView
+                        android:id="@+id/currency_symbol"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="$"
+                        android:textSize="16sp"
+                        android:textColor="#212121" />
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/amount_edit_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="50dp"
+                        android:layout_toEndOf="@id/currency_symbol"
+                        android:background="@null"
+                        android:hint="0.00"
+                        android:inputType="numberDecimal"
+                        android:textColor="#212121"
+                        android:textSize="16sp" />
+
+                    <TextView
+                        android:id="@+id/clear_amount_btn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:text="Clear"
+                        android:textColor="#009688"
                         android:textSize="14sp" />
-                </LinearLayout>
-            </RelativeLayout>
+                </RelativeLayout>
 
-            <!-- Notes Field -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="ADDITIONAL NOTES"
-                android:textSize="12sp"
-                android:textColor="#757575"
-                android:layout_marginBottom="4dp" />
+                <!-- Date Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="DATE"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="4dp" />
 
-            <EditText
-                android:layout_width="match_parent"
-                android:layout_height="80dp"
-                android:background="@drawable/edit_text_background"
-                android:gravity="top"
-                android:hint="Add notes here..."
-                android:padding="12dp"
-                android:textSize="14sp"
-                android:layout_marginBottom="24dp" />
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/edit_text_background"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp">
 
-            <!-- Add Button - Now inside the card -->
-            <Button
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/button_background"
-                android:text="Add"
-                android:textAllCaps="false"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp" />
+                    <TextView
+                        android:id="@+id/date_text_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tue, 22 Feb 2022"
+                        android:textSize="16sp"
+                        android:textColor="#212121" />
 
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                    <ImageView
+                        android:id="@+id/calendar_icon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/calendarr" />
+                </RelativeLayout>
+
+                <!-- Invoice Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="INVOICE"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="4dp" />
+
+                <RelativeLayout
+                    android:id="@+id/invoice_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/dashed_border"
+                    android:padding="12dp"
+                    android:layout_marginBottom="16dp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/invoice_icon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/ic_add_circle"
+                            android:layout_marginEnd="8dp" />
+
+                        <TextView
+                            android:id="@+id/add_invoice_btn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Add Invoice"
+                            android:textColor="#757575"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+                </RelativeLayout>
+
+                <!-- Notes Field -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ADDITIONAL NOTES"
+                    android:textSize="12sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="4dp" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/notes_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    android:background="@drawable/edit_text_background"
+                    android:gravity="top"
+                    android:hint="Add notes here..."
+                    android:padding="12dp"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="24dp" />
+
+                <!-- Add Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/add_transaction_btn"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/button_background"
+                    android:text="Add Transaction"
+                    android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </ScrollView>
 
 </RelativeLayout>

@@ -1,22 +1,25 @@
 package com.example.flowmoney.Fragments
 
-import android.app.Dialog
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
 import android.widget.ArrayAdapter
-import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.flowmoney.AddTransaction
 import com.example.flowmoney.R
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class RecordFragment : Fragment() {
 
@@ -30,6 +33,35 @@ class RecordFragment : Fragment() {
     private lateinit var textSavings: TextView
     private lateinit var emptyState: View
     private lateinit var fabAdd: FloatingActionButton
+
+    // Activity result launcher for AddTransaction
+    private val addTransactionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            if (data != null) {
+                // Process the returned transaction data
+                val amount = data.getDoubleExtra("amount", 0.0)
+                val accountId = data.getStringExtra("accountId") ?: ""
+                val categoryId = data.getStringExtra("categoryId") ?: ""
+                val transactionType = data.getStringExtra("transactionType") ?: "expense"
+                val date = data.getLongExtra("date", System.currentTimeMillis())
+                val notes = data.getStringExtra("notes") ?: ""
+                val hasInvoice = data.getBooleanExtra("hasInvoice", false)
+                val invoiceUri = data.getStringExtra("invoiceUri")
+
+                // Here you would save the transaction to your database
+                saveTransactionToDatabase(amount, accountId, categoryId, transactionType, date, notes, hasInvoice, invoiceUri)
+
+                // Show a success message
+                Toast.makeText(requireContext(), "Transaction added successfully", Toast.LENGTH_SHORT).show()
+
+                // Update UI (refresh transaction list)
+                updateTransactionList()
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -95,44 +127,114 @@ class RecordFragment : Fragment() {
         // recyclerRecords.adapter = yourAdapter
 
         // Show empty state if no transactions
+        updateEmptyState()
+    }
+
+    private fun updateEmptyState() {
         // This is just an example, you should check if your data is empty
-        val hasTransactions = true // Replace with your logic
+        val hasTransactions = false // Replace with your logic
         emptyState.visibility = if (hasTransactions) View.GONE else View.VISIBLE
         recyclerRecords.visibility = if (hasTransactions) View.VISIBLE else View.GONE
     }
 
     private fun setupClickListeners() {
         fabAdd.setOnClickListener {
-            showAddTransactionDialog()
-        }
-    }
-
-    private fun showAddTransactionDialog() {
-        // Create dialog
-        val dialog = Dialog(requireContext())
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setCancelable(false)
-        dialog.setContentView(R.layout.activity_add_transaction)
-
-        // Make dialog background transparent to show rounded corners properly
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
-        // Set dialog width to match parent with margins
-        val layoutParams = dialog.window?.attributes
-        layoutParams?.width = ViewGroup.LayoutParams.MATCH_PARENT
-        dialog.window?.attributes = layoutParams
-
-        // Set close button click listener
-        val btnClose = dialog.findViewById<ImageButton>(R.id.btn_close)
-        btnClose.setOnClickListener {
-            dialog.dismiss()
+            launchAddTransaction()
         }
 
-        // Show dialog
-        dialog.show()
+        // Add listeners for your spinners/filters if needed
+        categorySpinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                // Filter transactions based on selected category
+                updateTransactionList()
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                // Do nothing
+            }
+        })
+
+        sortSpinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                // Sort transactions based on selected option
+                updateTransactionList()
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                // Do nothing
+            }
+        })
     }
 
-    // You can keep the companion object if needed for creating instances
+    private fun launchAddTransaction() {
+        val intent = Intent(requireContext(), AddTransaction::class.java)
+        addTransactionLauncher.launch(intent)
+    }
+
+    private fun saveTransactionToDatabase(
+        amount: Double,
+        accountId: String,
+        categoryId: String,
+        transactionType: String,
+        date: Long,
+        notes: String,
+        hasInvoice: Boolean,
+        invoiceUri: String?
+    ) {
+        // Here you would implement the logic to save the transaction to Firebase
+        // This is just a placeholder for your implementation
+
+        // Example code:
+        // val transaction = Transaction(
+        //     id = UUID.randomUUID().toString(),
+        //     userId = getCurrentUserId(),
+        //     amount = amount,
+        //     accountId = accountId,
+        //     categoryId = categoryId,
+        //     type = transactionType,
+        //     date = date,
+        //     notes = notes,
+        //     hasInvoice = hasInvoice,
+        //     invoiceUri = invoiceUri
+        // )
+        //
+        // FirebaseFirestore.getInstance()
+        //     .collection("transactions")
+        //     .document(transaction.id)
+        //     .set(transaction)
+        //     .addOnSuccessListener {
+        //         // Transaction saved successfully
+        //     }
+        //     .addOnFailureListener { e ->
+        //         // Handle error
+        //     }
+    }
+
+    private fun updateTransactionList() {
+        // Implement logic to refresh transaction list based on filters
+        // This would typically involve querying your database with the filters
+        // and updating your RecyclerView adapter
+
+        // After updating the list, update the empty state
+        updateEmptyState()
+
+        // Also update summary values
+        updateSummaryValues()
+    }
+
+    private fun updateSummaryValues() {
+        // Example implementation - replace with your actual data
+        val totalIncome = 1000.0
+        val totalExpenses = 750.0
+        val totalSavings = 250.0
+        val balance = totalIncome - totalExpenses
+
+        textTotalBalance.text = String.format("$%.2f", balance)
+        textIncome.text = String.format("$%.2f", totalIncome)
+        textExpenses.text = String.format("$%.2f", totalExpenses)
+        textSavings.text = String.format("$%.2f", totalSavings)
+    }
+
     companion object {
         @JvmStatic
         fun newInstance() = RecordFragment()
