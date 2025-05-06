@@ -73,10 +73,8 @@ class AccountsFragment : Fragment() {
         backButton = view.findViewById(R.id.btn_back)
         totalBalanceTextView = view.findViewById(R.id.tv_total_balance)
         emptyStateLayout = view.findViewById(R.id.empty_state_layout)
-        progressBar = view.findViewById(R.id.progress_bar)
-
-        // Find the empty state message TextView
         emptyStateMessage = view.findViewById(R.id.tv_empty_state_message)
+        progressBar = view.findViewById(R.id.progress_bar)
 
         // Setup adapter
         setupRecyclerView()
@@ -92,14 +90,17 @@ class AccountsFragment : Fragment() {
             activity?.onBackPressed()
         }
 
-        // Load initial data
-        loadAccounts()
-
         return view
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // Load accounts when view is created
+        loadAccounts()
+    }
+
     private fun setupRecyclerView() {
-        // Initialize adapter
+        // Initialize adapter with empty list
         accountsAdapter = AccountsAdapter(requireContext()) { account ->
             // Handle account item click
             onAccountClicked(account)
@@ -135,6 +136,7 @@ class AccountsFragment : Fragment() {
         // Show loading indicator
         progressBar.visibility = View.VISIBLE
         emptyStateLayout.visibility = View.GONE
+        recyclerView.visibility = View.GONE
 
         try {
             // Remove any existing listener
@@ -142,11 +144,12 @@ class AccountsFragment : Fragment() {
 
             val accountsCollection = firestore.collection("accounts")
 
-            // Create a simple query that only filters by user_id and sorts by creation date
-            // This avoids the need for complex indexes
+            // Create query that filters by user_id
             val query = accountsCollection
                 .whereEqualTo("user_id", currentUser.uid)
                 .orderBy("created_at", Query.Direction.DESCENDING)
+
+            Log.d(TAG, "Querying accounts for user ID: ${currentUser.uid}")
 
             // Use a listener for real-time updates
             accountsListener = query.addSnapshotListener { snapshot, e ->
@@ -162,8 +165,9 @@ class AccountsFragment : Fragment() {
 
                 if (snapshot == null || snapshot.isEmpty) {
                     // Show empty state when no accounts found
-                    showEmptyState("No accounts found")
+                    showEmptyState("No accounts found. Add your first account!")
                     updateTotalBalance(0.0)
+                    recyclerView.visibility = View.GONE
                     return@addSnapshotListener
                 }
 
@@ -181,6 +185,12 @@ class AccountsFragment : Fragment() {
                     }
                 }
 
+                // Debug log for accounts retrieved
+                Log.d(TAG, "Retrieved ${accounts.size} accounts for user ${currentUser.uid}")
+                accounts.forEach { account ->
+                    Log.d(TAG, "Account: ${account.accountId}, Name: ${account.accountName}, Type: ${account.accountType}, Balance: ${account.balance}")
+                }
+
                 // Update the adapter with the new data
                 accountsAdapter.submitList(accounts)
 
@@ -190,9 +200,11 @@ class AccountsFragment : Fragment() {
 
                 // Show/hide empty state based on results
                 if (accounts.isEmpty()) {
-                    showEmptyState("No accounts found")
+                    showEmptyState("No accounts found. Add your first account!")
+                    recyclerView.visibility = View.GONE
                 } else {
                     emptyStateLayout.visibility = View.GONE
+                    recyclerView.visibility = View.VISIBLE
                     Log.d(TAG, "Loaded ${accounts.size} accounts")
                 }
             }
@@ -201,6 +213,7 @@ class AccountsFragment : Fragment() {
             Toast.makeText(context, "An unexpected error occurred", Toast.LENGTH_SHORT).show()
             progressBar.visibility = View.GONE
             showEmptyState("Something went wrong")
+            recyclerView.visibility = View.GONE
         }
     }
 
@@ -223,9 +236,7 @@ class AccountsFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         // Refresh accounts data when fragment becomes visible
-        if (accountsListener == null) {
-            loadAccounts()
-        }
+        loadAccounts()
     }
 
     override fun onDestroyView() {

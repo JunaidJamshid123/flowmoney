@@ -59,8 +59,15 @@ class AddNewAccount : AppCompatActivity() {
         firestore = FirebaseFirestore.getInstance()
         auth = FirebaseAuth.getInstance()
 
-        // Log Firebase initialization
-        Log.d(TAG, "Firebase initialized. User logged in: ${auth.currentUser != null}")
+        // Check if user is logged in
+        if (auth.currentUser == null) {
+            Log.e(TAG, "No user is logged in, redirecting to login")
+            Toast.makeText(this, "Please log in to add an account", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        Log.d(TAG, "Firebase initialized. User logged in: ${auth.currentUser?.uid}")
 
         // Initialize views
         initialAmountEditText = findViewById(R.id.etInitialAmount)
@@ -146,13 +153,14 @@ class AddNewAccount : AppCompatActivity() {
         if (currentUser == null) {
             Log.e(TAG, "No user is currently logged in")
             Toast.makeText(this, "You must be logged in to create an account", Toast.LENGTH_SHORT).show()
+            finish()
             return
         }
 
         Log.d(TAG, "Current user ID: ${currentUser.uid}")
 
         // Validate input
-        val initialAmountText = initialAmountEditText.text.toString()
+        val initialAmountText = initialAmountEditText.text.toString().trim()
         if (initialAmountText.isEmpty()) {
             initialAmountEditText.error = "Please enter an amount"
             return
@@ -164,7 +172,8 @@ class AddNewAccount : AppCompatActivity() {
             return
         }
 
-        val accountName = nameEditText.text.toString().takeIf { it.isNotEmpty() } ?: "Untitled"
+        // Get account name, defaulting to "Untitled" if empty
+        val accountName = nameEditText.text.toString().trim().takeIf { it.isNotEmpty() } ?: "Untitled"
 
         // Show loading indicator or disable button
         saveButton.isEnabled = false
@@ -198,6 +207,11 @@ class AddNewAccount : AppCompatActivity() {
                 accountImageUrl = iconBase64,
                 note = "Created on ${android.text.format.DateFormat.format("MMM dd, yyyy", System.currentTimeMillis())}"
             )
+
+            // Set timestamps explicitly
+            val currentTime = System.currentTimeMillis()
+            account.createdAt = currentTime
+            account.updatedAt = currentTime
 
             // Log account details before saving
             Log.d(TAG, "Account to be saved: ${account.toString()}")
@@ -280,9 +294,27 @@ class AddNewAccount : AppCompatActivity() {
         // Reference to accounts collection
         val accountsRef = firestore.collection("accounts")
 
+        // Convert Account object to Map
+        val accountMap = account.toMap()
+
+        // Add explicit created_at and updated_at fields
+        val accountData = hashMapOf<String, Any>(
+            "account_id" to account.accountId,
+            "user_id" to account.userId,
+            "account_name" to account.accountName,
+            "balance" to account.balance,
+            "account_type" to account.accountType,
+            "created_at" to account.createdAt,
+            "updated_at" to account.updatedAt
+        )
+
+        // Add optional fields
+        account.accountImageUrl?.let { accountData["account_image_url"] = it }
+        account.note?.let { accountData["note"] = it }
+
         // Add account with the generated ID
         accountsRef.document(account.accountId)
-            .set(account.toMap())
+            .set(accountData)
             .addOnSuccessListener {
                 Log.d(TAG, "Account successfully added with ID: ${account.accountId}")
                 Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show()

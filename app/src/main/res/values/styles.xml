@@ -8,6 +8,7 @@
     </style>
 
 
+
     <!-- Dialog animation style -->
     <style name="DialogAnimation">
         <item name="android:windowEnterAnimation">@anim/slide_up</item>

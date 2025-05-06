@@ -1,6 +1,9 @@
 package com.example.flowmoney.Adapters
 
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.util.Base64
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,12 +15,15 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.Models.Account
 import com.example.flowmoney.R
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 
 class AccountsAdapter(
     private val context: Context,
     private val onItemClicked: (Account) -> Unit
 ) : ListAdapter<Account, AccountsAdapter.AccountViewHolder>(AccountDiffCallback()) {
+
+    private val TAG = "AccountsAdapter"
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AccountViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -27,6 +33,7 @@ class AccountsAdapter(
 
     override fun onBindViewHolder(holder: AccountViewHolder, position: Int) {
         val account = getItem(position)
+        Log.d(TAG, "Binding account at position $position: ${account.accountName}")
         holder.bind(account, context)
     }
 
@@ -39,6 +46,7 @@ class AccountsAdapter(
         private val accountType: TextView = itemView.findViewById(R.id.tv_account_type)
         private val accountBalance: TextView = itemView.findViewById(R.id.tv_account_balance)
         private var currentAccount: Account? = null
+        private val TAG = "AccountViewHolder"
 
         init {
             itemView.setOnClickListener {
@@ -50,6 +58,8 @@ class AccountsAdapter(
 
         fun bind(account: Account, context: Context) {
             currentAccount = account
+
+            Log.d(TAG, "Binding account: ${account.accountId}, Name: ${account.accountName}")
 
             // Set account name
             accountName.text = account.accountName
@@ -64,32 +74,62 @@ class AccountsAdapter(
             val formattedBalance = String.format("$%,.2f", account.balance)
             accountBalance.text = formattedBalance
 
-            // Set account icon based on type
-            val iconRes = when (account.accountType.lowercase()) {
-                "bank" -> R.drawable.bank
-                "cash" -> R.drawable.cash
-                "e-wallet" -> R.drawable.wallet
-                "credit" -> R.drawable.creditcard
-                else -> R.drawable.creditcard
-            }
+            // Determine default icon resource based on account type
+            val iconRes = getIconResourceForAccountType(account.accountType)
 
-            // If account has a custom image URL, load it using Glide
+            // If account has a base64 image string, try to decode it
             if (!account.accountImageUrl.isNullOrEmpty()) {
                 try {
-                    Glide.with(context)
-                        .load(account.accountImageUrl)
-                        .apply(RequestOptions()
-                            .placeholder(iconRes)
-                            .error(iconRes)
-                            .circleCrop())
-                        .into(accountIcon)
+                    // Check if it starts with http or https (remote URL)
+                    if (account.accountImageUrl!!.startsWith("http")) {
+                        // Load remote image with Glide
+                        Glide.with(context)
+                            .load(account.accountImageUrl)
+                            .apply(RequestOptions()
+                                .placeholder(iconRes)
+                                .error(iconRes)
+                                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                                .circleCrop())
+                            .into(accountIcon)
+                    } else {
+                        // Try to decode Base64 string
+                        try {
+                            val imageBytes = Base64.decode(account.accountImageUrl, Base64.DEFAULT)
+                            val decodedImage = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+
+                            if (decodedImage != null) {
+                                accountIcon.setImageBitmap(decodedImage)
+                            } else {
+                                // If decoding fails, use fallback
+                                Log.e(TAG, "Failed to decode Base64 image for account: ${account.accountName}")
+                                accountIcon.setImageResource(iconRes)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error decoding Base64 image: ${e.message}")
+                            accountIcon.setImageResource(iconRes)
+                        }
+                    }
                 } catch (e: Exception) {
-                    // Fallback to default icon if Glide fails
+                    // Fallback to default icon if image loading fails
+                    Log.e(TAG, "Error loading account image: ${e.message}")
                     accountIcon.setImageResource(iconRes)
                 }
             } else {
                 // Use default icon
                 accountIcon.setImageResource(iconRes)
+            }
+        }
+
+        private fun getIconResourceForAccountType(accountType: String): Int {
+            return when (accountType.lowercase()) {
+                "bank account" -> R.drawable.bank
+                "cash" -> R.drawable.cash
+                "e-wallet" -> R.drawable.onlinewallet
+                "credit card" -> R.drawable.creditcard
+                "mobile banking" -> R.drawable.mobilebanking
+                "mobile money" -> R.drawable.smartphone
+                "cryptocurrency" -> R.drawable.bitcoin
+                else -> R.drawable.creditcard // Default fallback
             }
         }
     }

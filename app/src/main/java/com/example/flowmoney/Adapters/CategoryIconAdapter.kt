@@ -4,15 +4,61 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.R
 import com.google.android.material.card.MaterialCardView
 
 class CategoryIconAdapter(
     private val icons: List<Int>,
-    private var selectedPosition: Int = 0,
     private val onIconSelected: (Int) -> Unit
 ) : RecyclerView.Adapter<CategoryIconAdapter.IconViewHolder>() {
+
+    // Track selected position, -1 means no selection
+    private var selectedPosition = 0 // Default to first item as selected
+
+    inner class IconViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val cardIcon: MaterialCardView = itemView.findViewById(R.id.cardIcon)
+        val iconImageView: ImageView = itemView.findViewById(R.id.ivCategoryIcon)
+
+        fun bind(iconResId: Int, position: Int) {
+            // Set the icon
+            iconImageView.setImageResource(iconResId)
+
+            // Set selected state
+            val isSelected = position == selectedPosition
+            val accentColor = ContextCompat.getColor(itemView.context, R.color.accent_green)
+            val defaultColor = ContextCompat.getColor(itemView.context, R.color.light_gray)
+
+            // Update card appearance based on selection state
+            with(cardIcon) {
+                strokeColor = if (isSelected) accentColor else defaultColor
+                strokeWidth = if (isSelected) 2 else 1
+                setCardBackgroundColor(
+                    if (isSelected)
+                        ContextCompat.getColor(itemView.context, R.color.very_light_green)
+                    else
+                        ContextCompat.getColor(itemView.context, android.R.color.white)
+                )
+            }
+
+            // Set click listener
+            itemView.setOnClickListener {
+                // Update selection if different
+                if (selectedPosition != position) {
+                    val oldPosition = selectedPosition
+                    selectedPosition = position
+
+                    // Notify adapter about changes to refresh both items
+                    notifyItemChanged(oldPosition)
+                    notifyItemChanged(selectedPosition)
+
+                    // Notify listener about selection
+                    onIconSelected(iconResId)
+                }
+            }
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): IconViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -21,52 +67,11 @@ class CategoryIconAdapter(
     }
 
     override fun onBindViewHolder(holder: IconViewHolder, position: Int) {
-        val icon = icons[position]
-        holder.bind(icon, position == selectedPosition)
-
-        holder.itemView.setOnClickListener {
-            val previousSelected = selectedPosition
-            selectedPosition = holder.adapterPosition
-
-            // Update previous and new selected items
-            notifyItemChanged(previousSelected)
-            notifyItemChanged(selectedPosition)
-
-            // Callback with the selected icon resource ID
-            onIconSelected(icons[selectedPosition])
-        }
+        holder.bind(icons[position], position)
     }
 
-    override fun getItemCount() = icons.size
+    override fun getItemCount(): Int = icons.size
 
-    fun setSelectedPosition(position: Int) {
-        if (position in 0 until itemCount) {
-            val previousSelected = selectedPosition
-            selectedPosition = position
-            notifyItemChanged(previousSelected)
-            notifyItemChanged(selectedPosition)
-        }
-    }
-
-    inner class IconViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val cardView: MaterialCardView = itemView.findViewById(R.id.cardIcon)
-        private val iconImageView: ImageView = itemView.findViewById(R.id.ivCategoryIcon)
-
-        fun bind(iconResId: Int, isSelected: Boolean) {
-            iconImageView.setImageResource(iconResId)
-
-            // Update the card appearance based on selection state
-            if (isSelected) {
-                cardView.strokeColor = itemView.context.getColor(R.color.green_primary) // Use your app's primary color
-                cardView.strokeWidth = 2
-                cardView.setCardBackgroundColor(itemView.context.getColor(R.color.green_light)) // Light variant of primary color
-                iconImageView.setColorFilter(itemView.context.getColor(R.color.green_primary))
-            } else {
-                cardView.strokeColor = itemView.context.getColor(R.color.light_gray) // Light gray for unselected
-                cardView.strokeWidth = 1
-                cardView.setCardBackgroundColor(itemView.context.getColor(R.color.light_gray))
-                iconImageView.setColorFilter(itemView.context.getColor(R.color.light_gray))
-            }
-        }
-    }
+    // Method to get currently selected icon resource ID
+    fun getSelectedIconResId(): Int = icons[selectedPosition]
 }

@@ -5,8 +5,9 @@
     <color name="primary">#228D57</color>
     <color name="primary_dark">#1B7046</color>
     <color name="accent">#228D57</color>
-    <color name="light_gray">#E5E5E5</color>
-
+    <color name="accent_green">#1E8E3E</color>
+    <color name="light_gray">#E0E0E0</color>
+    <color name="very_light_green">#E6F4EA</color>
     <color name="green_primary">#009B5E</color>
     <color name="green_light">#E6F5EF</color>
     <color name="green_dark">#007F4D</color>
