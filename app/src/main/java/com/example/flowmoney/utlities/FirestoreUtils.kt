@@ -29,6 +29,7 @@ object FirestoreUtils {
      * @param name The category name
      * @param iconResourceId The drawable resource ID of the icon
      * @param isIncome Whether the category is for income
+     * @param categoryType The type of category (expense, income, or saving)
      * @param userId The ID of the user
      * @param onSuccess Callback when save is successful, returns the created Category
      * @param onFailure Callback when save fails, returns the error message
@@ -38,6 +39,7 @@ object FirestoreUtils {
         name: String,
         iconResourceId: Int,
         isIncome: Boolean,
+        categoryType: String,
         userId: String,
         onSuccess: (Category) -> Unit,
         onFailure: (String) -> Unit
@@ -63,11 +65,15 @@ object FirestoreUtils {
             val currentTime = System.currentTimeMillis()
             newCategory.createdAt = currentTime
             newCategory.updatedAt = currentTime
+            
+            // Convert to map and add category_type
+            val categoryMap = newCategory.toMap().toMutableMap()
+            categoryMap["category_type"] = categoryType
 
             // Add to Firestore
             db.collection(Category.COLLECTION_NAME)
                 .document(categoryId)
-                .set(newCategory.toMap())
+                .set(categoryMap)
                 .addOnSuccessListener {
                     Log.d(TAG, "Category saved with ID: $categoryId")
                     // Return the category

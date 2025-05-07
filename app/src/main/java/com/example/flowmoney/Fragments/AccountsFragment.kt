@@ -46,6 +46,9 @@ class AccountsFragment : Fragment() {
     // Firestore listener
     private var accountsListener: ListenerRegistration? = null
 
+    // Store total balance
+    private var totalBalance: Double = 0.0
+
     // Use ActivityResultLauncher for handling the result from AddNewAccount activity
     private val addAccountLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -144,12 +147,10 @@ class AccountsFragment : Fragment() {
 
             val accountsCollection = firestore.collection("accounts")
 
-            // Simpler query to avoid index issues - just filter by user_id without complex ordering
+            // Using just a single field query to avoid index issues
             val query = accountsCollection
                 .whereEqualTo("user_id", currentUser.uid)
-                // Use a simple field for ordering that doesn't require a composite index
-                .orderBy("account_name") 
-
+                
             Log.d(TAG, "Querying accounts for user ID: ${currentUser.uid}")
 
             // Use a listener for real-time updates
@@ -197,21 +198,24 @@ class AccountsFragment : Fragment() {
                     Log.d(TAG, "Account: ${account.accountId}, Name: ${account.accountName}, Type: ${account.accountType}, Balance: ${account.balance}")
                 }
 
+                // Sort accounts by name in memory (instead of in the query)
+                val sortedAccounts = accounts.sortedBy { it.accountName }
+
                 // Update the adapter with the new data
-                accountsAdapter.submitList(accounts)
+                accountsAdapter.submitList(sortedAccounts)
 
                 // Calculate and display total balance
-                val totalBalance = accounts.sumOf { it.balance }
+                totalBalance = sortedAccounts.sumOf { it.balance }
                 updateTotalBalance(totalBalance)
 
                 // Show/hide empty state based on results
-                if (accounts.isEmpty()) {
+                if (sortedAccounts.isEmpty()) {
                     showEmptyState("No accounts found. Add your first account!")
                     recyclerView.visibility = View.GONE
                 } else {
                     emptyStateLayout.visibility = View.GONE
                     recyclerView.visibility = View.VISIBLE
-                    Log.d(TAG, "Loaded ${accounts.size} accounts")
+                    Log.d(TAG, "Loaded ${sortedAccounts.size} accounts")
                 }
             }
         } catch (e: Exception) {
@@ -224,6 +228,9 @@ class AccountsFragment : Fragment() {
     }
 
     private fun updateTotalBalance(balance: Double) {
+        // Store balance for other fragments to access
+        totalBalance = balance
+
         // Format the balance with currency symbol and 2 decimal places
         val formattedBalance = String.format("$%,.2f", balance)
         totalBalanceTextView.text = formattedBalance
@@ -254,5 +261,41 @@ class AccountsFragment : Fragment() {
     companion object {
         @JvmStatic
         fun newInstance() = AccountsFragment()
+
+        // Public method to get total accounts balance from any fragment
+        var accountsTotalBalance = 0.0
+            private set
+            
+        // Method to update account balance when a transaction is made
+        fun updateAccountBalance(accountId: String, amount: Double, isExpense: Boolean) {
+            val firestore = FirebaseFirestore.getInstance()
+            val accountRef = firestore.collection("accounts").document(accountId)
+            
+            // Use a transaction to safely update the balance
+            firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(accountRef)
+                val currentBalance = snapshot.getDouble("balance") ?: 0.0
+                
+                // Calculate new balance - add for income, subtract for expense
+                val newBalance = if (isExpense) {
+                    currentBalance - amount
+                } else {
+                    currentBalance + amount
+                }
+                
+                // Update the balance field
+                transaction.update(accountRef, "balance", newBalance)
+                
+                // Also update last modified timestamp
+                transaction.update(accountRef, "updated_at", System.currentTimeMillis())
+                
+                // Return result value (not used in this case)
+                null
+            }.addOnSuccessListener {
+                Log.d("AccountsFragment", "Successfully updated account balance for $accountId")
+            }.addOnFailureListener { e ->
+                Log.e("AccountsFragment", "Error updating account balance", e)
+            }
+        }
     }
 }

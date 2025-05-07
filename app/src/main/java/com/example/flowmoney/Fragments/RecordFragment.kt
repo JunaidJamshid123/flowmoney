@@ -1,6 +1,7 @@
 package com.example.flowmoney.Fragments
 
 import android.app.Activity
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -12,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
@@ -25,6 +27,7 @@ import com.example.flowmoney.Models.Category
 import com.example.flowmoney.Models.Transaction
 import com.example.flowmoney.R
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -45,6 +48,8 @@ class RecordFragment : Fragment() {
     private lateinit var textSavings: TextView
     private lateinit var emptyState: View
     private lateinit var fabAdd: FloatingActionButton
+    private lateinit var dateFilterButton: View
+    private lateinit var dateFilterText: TextView
 
     // Data
     private val transactions = mutableListOf<Transaction>()
@@ -52,6 +57,7 @@ class RecordFragment : Fragment() {
     private var transactionAdapter: TransactionAdapter? = null
     private var selectedCategoryPosition = 0
     private var selectedSortPosition = 0
+    private var selectedDate: Calendar? = null
 
     // Firebase
     private lateinit var auth: FirebaseAuth
@@ -117,6 +123,8 @@ class RecordFragment : Fragment() {
         textSavings = view.findViewById(R.id.text_savings)
         emptyState = view.findViewById(R.id.empty_state)
         fabAdd = view.findViewById(R.id.fab_add)
+        dateFilterButton = view.findViewById(R.id.date_filter_button)
+        dateFilterText = view.findViewById(R.id.date_filter_text)
     }
 
     private fun setupRecyclerView() {
@@ -175,6 +183,56 @@ class RecordFragment : Fragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 // Do nothing
             }
+        }
+        
+        // Setup date filter button
+        dateFilterButton.setOnClickListener {
+            showDatePicker()
+        }
+    }
+    
+    private fun showDatePicker() {
+        val calendar = selectedDate ?: Calendar.getInstance()
+        
+        val datePickerDialog = DatePickerDialog(
+            requireContext(),
+            { _: DatePicker, year: Int, month: Int, dayOfMonth: Int ->
+                // Update the selected date
+                val newCalendar = Calendar.getInstance()
+                newCalendar.set(year, month, dayOfMonth)
+                selectedDate = newCalendar
+                
+                // Update the filter text
+                updateDateFilterText()
+                
+                // Apply the date filter
+                filterTransactions()
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        
+        // Add a clear button to remove date filter
+        datePickerDialog.setButton(
+            DatePickerDialog.BUTTON_NEUTRAL, 
+            "Clear Filter"
+        ) { _, _ ->
+            selectedDate = null
+            updateDateFilterText()
+            filterTransactions()
+        }
+        
+        datePickerDialog.show()
+    }
+    
+    private fun updateDateFilterText() {
+        if (selectedDate != null) {
+            val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+            dateFilterText.text = dateFormat.format(selectedDate!!.time)
+            dateFilterText.visibility = View.VISIBLE
+        } else {
+            dateFilterText.visibility = View.GONE
         }
     }
     
@@ -314,6 +372,32 @@ class RecordFragment : Fragment() {
             filteredList.retainAll { it.categoryId == selectedCategory.categoryId }
         }
         
+        // Apply date filter if selected
+        selectedDate?.let { calendar ->
+            // Set time to beginning of day
+            val startOfDay = Calendar.getInstance()
+            startOfDay.timeInMillis = calendar.timeInMillis
+            startOfDay.set(Calendar.HOUR_OF_DAY, 0)
+            startOfDay.set(Calendar.MINUTE, 0)
+            startOfDay.set(Calendar.SECOND, 0)
+            
+            // Set time to end of day
+            val endOfDay = Calendar.getInstance()
+            endOfDay.timeInMillis = calendar.timeInMillis
+            endOfDay.set(Calendar.HOUR_OF_DAY, 23)
+            endOfDay.set(Calendar.MINUTE, 59)
+            endOfDay.set(Calendar.SECOND, 59)
+            
+            // Create Timestamps for comparison
+            val startTimestamp = Timestamp(startOfDay.time)
+            val endTimestamp = Timestamp(endOfDay.time)
+            
+            // Filter transactions within the day
+            filteredList.retainAll { 
+                it.date.compareTo(startTimestamp) >= 0 && it.date.compareTo(endTimestamp) <= 0 
+            }
+        }
+        
         // Apply sorting
         when (selectedSortPosition) {
             0 -> filteredList.sortByDescending { it.date.seconds } // Newest
@@ -334,9 +418,13 @@ class RecordFragment : Fragment() {
     }
 
     private fun updateSummaryValues(income: Double, expense: Double, savings: Double) {
-        val balance = income - expense - savings
+        // Get total balance from AccountsFragment
+        val totalAccountBalance = AccountsFragment.accountsTotalBalance
         
-        textTotalBalance.text = String.format("$%.2f", balance)
+        // Display total balance from accounts
+        textTotalBalance.text = String.format("$%,.2f", totalAccountBalance)
+        
+        // Display income, expenses and savings
         textIncome.text = String.format("$%.2f", income)
         textExpenses.text = String.format("$%.2f", expense)
         textSavings.text = String.format("$%.2f", savings)
@@ -357,6 +445,14 @@ class RecordFragment : Fragment() {
         super.onDestroyView()
         // Clean up listener to prevent memory leaks
         transactionsListener?.remove()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when returning to the fragment
+        if (auth.currentUser != null) {
+            loadTransactions()
+        }
     }
 
     /**

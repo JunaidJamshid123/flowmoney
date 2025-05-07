@@ -3,17 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:padding="4dp">
+    android:padding="6dp">
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardIcon"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
         android:clickable="true"
         android:focusable="true"
         app:cardBackgroundColor="@android:color/white"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="0dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="2dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -27,9 +27,10 @@
 
             <ImageView
                 android:id="@+id/ivCategoryIcon"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
                 android:contentDescription="Category icon"
+                android:tint="@color/accent_green"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"

@@ -14,8 +14,17 @@ class CategoryIconAdapter(
     private val onIconSelected: (Int) -> Unit
 ) : RecyclerView.Adapter<CategoryIconAdapter.IconViewHolder>() {
 
-    // Track selected position, -1 means no selection
-    private var selectedPosition = 0 // Default to first item as selected
+    // Track selected position, default to -1 (nothing selected)
+    private var selectedPosition = -1
+
+    init {
+        // Select the first icon by default
+        if (icons.isNotEmpty()) {
+            selectedPosition = 0
+            // Call onIconSelected with the first icon
+            onIconSelected(icons[0])
+        }
+    }
 
     inner class IconViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val cardIcon: MaterialCardView = itemView.findViewById(R.id.cardIcon)
@@ -73,7 +82,11 @@ class CategoryIconAdapter(
     override fun getItemCount(): Int = icons.size
 
     // Method to get currently selected icon resource ID
-    fun getSelectedIconResId(): Int = icons[selectedPosition]
+    fun getSelectedIconResId(): Int = if (selectedPosition >= 0 && selectedPosition < icons.size) {
+        icons[selectedPosition]
+    } else {
+        -1 // Invalid selection
+    }
     
     // Method to set selected icon by its resource ID
     fun setSelectedIcon(iconResId: Int) {

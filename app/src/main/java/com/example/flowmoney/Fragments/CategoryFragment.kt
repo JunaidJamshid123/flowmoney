@@ -28,6 +28,8 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
+import android.widget.RadioGroup
+import android.widget.RadioButton
 
 class CategoryFragment : Fragment() {
     private val TAG = "CategoryFragment"
@@ -150,20 +152,27 @@ class CategoryFragment : Fragment() {
             val rvCategoryIcons = dialog.findViewById<RecyclerView>(R.id.rvCategoryIcons)
             val btnCancel = dialog.findViewById<MaterialButton>(R.id.btnCancel)
             val btnSave = dialog.findViewById<MaterialButton>(R.id.btnSave)
-            val btnToggleType = dialog.findViewById<MaterialButton>(R.id.btnToggleType)
+            val radioGroupCategoryType = dialog.findViewById<RadioGroup>(R.id.radioGroupCategoryType)
+            val radioBtnExpense = dialog.findViewById<RadioButton>(R.id.radioBtnExpense)
+            val radioBtnIncome = dialog.findViewById<RadioButton>(R.id.radioBtnIncome)
+            val radioBtnSaving = dialog.findViewById<RadioButton>(R.id.radioBtnSaving)
             
-            // Track if category is income
-            var isIncome = false
+            // Default category type
+            var categoryType = "expense"
             
-            // Toggle button for income/expense
-            btnToggleType.setOnClickListener {
-                isIncome = !isIncome
-                btnToggleType.text = if (isIncome) "Income" else "Expense"
-                btnToggleType.icon = resources.getDrawable(
-                    if (isIncome) R.drawable.income else R.drawable.shoppingg, 
-                    null
-                )
+            // Radio button listener for category type
+            radioGroupCategoryType.setOnCheckedChangeListener { group, checkedId ->
+                categoryType = when (checkedId) {
+                    R.id.radioBtnExpense -> "expense"
+                    R.id.radioBtnIncome -> "income"
+                    R.id.radioBtnSaving -> "saving"
+                    else -> "expense"
+                }
+                Log.d(TAG, "Selected category type: $categoryType")
             }
+            
+            // Set default selection
+            radioBtnExpense.isChecked = true
 
             // Variable to store selected icon
             var selectedIconResId = R.drawable.cash // Default icon
@@ -196,7 +205,8 @@ class CategoryFragment : Fragment() {
                         context = ctx,
                         name = categoryName,
                         iconResourceId = selectedIconResId,
-                        isIncome = isIncome,
+                        isIncome = categoryType == "income",
+                        categoryType = categoryType,
                         userId = userId,
                         onSuccess = { newCategory ->
                             // Add to local list and notify adapter

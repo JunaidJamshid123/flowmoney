@@ -249,72 +249,110 @@
             android:layout_marginStart="20dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="20dp"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="16dp"
             app:cardElevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="12dp"
+                android:padding="16dp"
                 android:gravity="center_vertical">
 
-                <!-- Date Filter - Spinner Style -->
-                <!-- Date Filter -->
+                <!-- Date Filter Button - Consistent Style -->
                 <LinearLayout
-                    android:id="@+id/date_filter"
+                    android:id="@+id/date_filter_button"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:background="@drawable/filter_chip_background"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="6dp">
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+                    
                     <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@drawable/calendarr" />
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/calendarr"
+                        app:tint="@color/accent_green" />
+                    
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="April 2025"
+                        android:layout_marginStart="8dp"
+                        android:text="Date"
                         android:textColor="#333333"
-                        android:textSize="13sp" />
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" />
+                    
                     <ImageView
-                        android:layout_width="14dp"
-                        android:layout_height="14dp"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
                         android:layout_marginStart="4dp"
                         android:src="@drawable/ic_dropdown"
-                        app:tint="#555555" />
+                        app:tint="@color/accent_green" />
                 </LinearLayout>
 
-
-                <!-- Category Filter - Spinner Style -->
-                <Spinner
-                    android:id="@+id/category_spinner"
-                    android:layout_width="0dp"
+                <!-- Date Filter Selected Text - Improved -->
+                <TextView
+                    android:id="@+id/date_filter_text"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/filter_chip_background"
+                    android:paddingStart="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="8dp"
+                    android:text="Apr 23, 2023"
+                    android:textColor="@color/accent_green"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:fontFamily="sans-serif-medium"
+                    android:visibility="gone" />
+
+                <!-- Category Filter - Consistent Style -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/spinner_background"
-                    android:spinnerMode="dropdown"
-                    android:padding="8dp"
-                    android:popupBackground="@drawable/spinner_dropdown_background" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    
+                    <Spinner
+                        android:id="@+id/category_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/spinner_background"
+                        android:spinnerMode="dropdown"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:popupBackground="@drawable/spinner_dropdown_background" />
+                </LinearLayout>
 
-                <!-- Sort Filter - Spinner Style -->
-                <Spinner
-                    android:id="@+id/sort_spinner"
+                <!-- Sort Filter - Consistent Style -->
+                <LinearLayout
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="48dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/spinner_background"
-                    android:spinnerMode="dropdown"
-                    android:padding="8dp"
-                    android:popupBackground="@drawable/spinner_dropdown_background" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    
+                    <Spinner
+                        android:id="@+id/sort_spinner"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/spinner_background"
+                        android:spinnerMode="dropdown"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:popupBackground="@drawable/spinner_dropdown_background" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

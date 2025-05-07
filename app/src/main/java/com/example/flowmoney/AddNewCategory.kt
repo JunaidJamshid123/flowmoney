@@ -21,6 +21,8 @@ import com.example.flowmoney.Adapters.CategoryIconAdapter
 import com.example.flowmoney.Models.Category
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 
@@ -33,8 +35,10 @@ class AddNewCategory : AppCompatActivity() {
     private lateinit var rvCategoryIcons: RecyclerView
     private lateinit var btnCancel: MaterialButton
     private lateinit var btnSave: MaterialButton
-    private lateinit var toggleIncomeExpense: MaterialButton
-    private lateinit var toggleSaving: MaterialButton
+    private lateinit var radioGroupCategoryType: RadioGroup
+    private lateinit var radioBtnExpense: RadioButton
+    private lateinit var radioBtnIncome: RadioButton
+    private lateinit var radioBtnSaving: RadioButton
     private lateinit var progressBar: View
 
     private var selectedIconResId: Int = R.drawable.cash // Default icon
@@ -66,29 +70,24 @@ class AddNewCategory : AppCompatActivity() {
             rvCategoryIcons = findViewById(R.id.rvCategoryIcons)
             btnCancel = findViewById(R.id.btnCancel)
             btnSave = findViewById(R.id.btnSave)
-            toggleIncomeExpense = findViewById(R.id.btnToggleType)
-            toggleSaving = findViewById(R.id.btnToggleSaving)
+            radioGroupCategoryType = findViewById(R.id.radioGroupCategoryType)
+            radioBtnExpense = findViewById(R.id.radioBtnExpense)
+            radioBtnIncome = findViewById(R.id.radioBtnIncome)
+            radioBtnSaving = findViewById(R.id.radioBtnSaving)
             progressBar = findViewById(R.id.progressBar)
 
-            // Set up toggle button for income/expense
-            toggleIncomeExpense.setOnClickListener {
-                if (categoryType == "saving") {
-                    // Can't toggle between income/expense while in saving mode
-                    return@setOnClickListener
+            // Set up radio group listener
+            radioGroupCategoryType.setOnCheckedChangeListener { group, checkedId ->
+                when (checkedId) {
+                    R.id.radioBtnExpense -> categoryType = "expense"
+                    R.id.radioBtnIncome -> categoryType = "income"
+                    R.id.radioBtnSaving -> categoryType = "saving"
                 }
-                
-                categoryType = if (categoryType == "expense") "income" else "expense"
-                updateToggleButtons()
+                Log.d(TAG, "Category type selected: $categoryType")
             }
             
-            // Set up toggle button for saving
-            toggleSaving.setOnClickListener {
-                categoryType = if (categoryType == "saving") "expense" else "saving"
-                updateToggleButtons()
-            }
-            
-            // Initial button state
-            updateToggleButtons()
+            // Set default selection
+            radioBtnExpense.isChecked = true
 
             // Setup RecyclerView with layout manager
             val layoutManager = GridLayoutManager(this, 4) // 4 columns
@@ -105,42 +104,6 @@ class AddNewCategory : AppCompatActivity() {
             val errorMsg = "Error initializing AddNewCategory: ${e.message}"
             Log.e(TAG, errorMsg, e)
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun updateToggleButtons() {
-        // Update income/expense toggle
-        if (categoryType == "income") {
-            toggleIncomeExpense.text = "Income"
-            toggleIncomeExpense.icon = ContextCompat.getDrawable(this, R.drawable.income)
-            toggleIncomeExpense.setBackgroundColor(ContextCompat.getColor(this, R.color.income_green))
-            toggleIncomeExpense.setTextColor(ContextCompat.getColor(this, R.color.white))
-        } else {
-            toggleIncomeExpense.text = "Expense"
-            toggleIncomeExpense.icon = ContextCompat.getDrawable(this, R.drawable.shoppingg)
-            toggleIncomeExpense.setBackgroundColor(ContextCompat.getColor(this, R.color.expense_red))
-            toggleIncomeExpense.setTextColor(ContextCompat.getColor(this, R.color.white))
-        }
-        
-        // Update saving toggle - use different style to show if it's selected
-        if (categoryType == "saving") {
-            toggleSaving.text = "Saving"
-            toggleSaving.icon = ContextCompat.getDrawable(this, R.drawable.saving)
-            toggleSaving.setBackgroundColor(ContextCompat.getColor(this, R.color.saving_blue))
-            toggleSaving.setTextColor(ContextCompat.getColor(this, R.color.white))
-            
-            // Disable income/expense toggle while in saving mode
-            toggleIncomeExpense.isEnabled = false
-            toggleIncomeExpense.alpha = 0.5f
-        } else {
-            toggleSaving.text = "Saving"
-            toggleSaving.icon = ContextCompat.getDrawable(this, R.drawable.saving)
-            toggleSaving.setBackgroundColor(ContextCompat.getColor(this, R.color.light_gray))
-            toggleSaving.setTextColor(ContextCompat.getColor(this, R.color.black))
-            
-            // Enable income/expense toggle when not in saving mode
-            toggleIncomeExpense.isEnabled = true
-            toggleIncomeExpense.alpha = 1.0f
         }
     }
 
@@ -302,11 +265,7 @@ class AddNewCategory : AppCompatActivity() {
         
         // Add category type for the saving case
         val categoryData = category.toMap().toMutableMap()
-        if (categoryType == "saving") {
-            categoryData["category_type"] = "saving"
-        } else {
-            categoryData["category_type"] = if (isIncome) "income" else "expense"
-        }
+        categoryData["category_type"] = categoryType
 
         // Save to Firestore
         firestore.collection("categories")
