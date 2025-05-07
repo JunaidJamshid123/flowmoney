@@ -27,9 +27,11 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
+import com.google.firebase.auth.FirebaseAuth
 
 class CategoryFragment : Fragment() {
-
+    private val TAG = "CategoryFragment"
+    
     private lateinit var recyclerView: RecyclerView
     private lateinit var balanceTextView: TextView
     private lateinit var addCategoryButton: FloatingActionButton
@@ -37,12 +39,26 @@ class CategoryFragment : Fragment() {
     private lateinit var progressIndicator: CircularProgressIndicator
     private lateinit var categoryAdapter: CategoryAdapter
     private val categories = mutableListOf<Category>()
+    
+    // Firebase Auth instance
+    private lateinit var auth: FirebaseAuth
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_category, container, false)
+
+        // Initialize Firebase Auth
+        auth = FirebaseAuth.getInstance()
+        
+        // Check if user is logged in
+        if (auth.currentUser == null) {
+            Log.e(TAG, "No user is logged in")
+            Toast.makeText(context, "Please log in to view categories", Toast.LENGTH_SHORT).show()
+            activity?.onBackPressed()
+            return view
+        }
 
         // Initialize views
         recyclerView = view.findViewById(R.id.rv_categories)
@@ -80,22 +96,22 @@ class CategoryFragment : Fragment() {
     }
 
     private fun loadCategories() {
-
-
+        // Get current user ID
+        val userId = auth.currentUser?.uid ?: return
+        
         FirestoreUtils.getAllCategories(
+            userId = userId,
             onSuccess = { fetchedCategories ->
-
                 categories.clear()
                 categories.addAll(fetchedCategories)
                 categoryAdapter.notifyDataSetChanged()
 
                 if (categories.isEmpty()) {
                     // Show empty state if needed
-                    Log.d("CategoryFragment", "No categories found")
+                    Log.d(TAG, "No categories found")
                 }
             },
             onFailure = { errorMessage ->
-
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             }
         )
@@ -103,6 +119,13 @@ class CategoryFragment : Fragment() {
 
     private fun showAddCategoryDialog() {
         try {
+            // Get current user ID
+            val userId = auth.currentUser?.uid
+            if (userId == null) {
+                Toast.makeText(context, "You must be logged in to add categories", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
             val dialog = Dialog(requireContext())
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
             dialog.setContentView(R.layout.activity_add_new_category)
@@ -127,7 +150,20 @@ class CategoryFragment : Fragment() {
             val rvCategoryIcons = dialog.findViewById<RecyclerView>(R.id.rvCategoryIcons)
             val btnCancel = dialog.findViewById<MaterialButton>(R.id.btnCancel)
             val btnSave = dialog.findViewById<MaterialButton>(R.id.btnSave)
-
+            val btnToggleType = dialog.findViewById<MaterialButton>(R.id.btnToggleType)
+            
+            // Track if category is income
+            var isIncome = false
+            
+            // Toggle button for income/expense
+            btnToggleType.setOnClickListener {
+                isIncome = !isIncome
+                btnToggleType.text = if (isIncome) "Income" else "Expense"
+                btnToggleType.icon = resources.getDrawable(
+                    if (isIncome) R.drawable.income else R.drawable.shoppingg, 
+                    null
+                )
+            }
 
             // Variable to store selected icon
             var selectedIconResId = R.drawable.cash // Default icon
@@ -151,7 +187,6 @@ class CategoryFragment : Fragment() {
                 }
 
                 // Show progress indicator
-
                 btnSave.isEnabled = false
                 btnCancel.isEnabled = false
 
@@ -161,10 +196,9 @@ class CategoryFragment : Fragment() {
                         context = ctx,
                         name = categoryName,
                         iconResourceId = selectedIconResId,
-                        isIncome = false, // Default to expense
+                        isIncome = isIncome,
+                        userId = userId,
                         onSuccess = { newCategory ->
-
-
                             // Add to local list and notify adapter
                             categories.add(newCategory)
                             categoryAdapter.notifyItemInserted(categories.size - 1)
@@ -176,7 +210,6 @@ class CategoryFragment : Fragment() {
                             dialog.dismiss()
                         },
                         onFailure = { errorMessage ->
-
                             btnSave.isEnabled = true
                             btnCancel.isEnabled = true
 
@@ -189,7 +222,7 @@ class CategoryFragment : Fragment() {
             dialog.show()
 
         } catch (e: Exception) {
-            Log.e("CategoryFragment", "Error showing dialog: ${e.message}", e)
+            Log.e(TAG, "Error showing dialog: ${e.message}", e)
             Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
@@ -221,19 +254,17 @@ class CategoryFragment : Fragment() {
             // Create and set adapter
             val adapter = CategoryIconAdapter(categoryIcons) { iconResId ->
                 onIconSelected(iconResId)
-                Log.d("CategoryFragment", "Icon selected: $iconResId")
+                Log.d(TAG, "Icon selected: $iconResId")
             }
 
             // Set adapter
             recyclerView.adapter = adapter
 
         } catch (e: Exception) {
-            Log.e("CategoryFragment", "Error setting up icons RecyclerView: ${e.message}", e)
+            Log.e(TAG, "Error setting up icons RecyclerView: ${e.message}", e)
             Toast.makeText(context, "Error loading icons: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
-
-
 
     companion object {
         @JvmStatic

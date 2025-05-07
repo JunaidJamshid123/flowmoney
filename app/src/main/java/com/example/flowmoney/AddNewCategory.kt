@@ -1,34 +1,78 @@
 package com.example.flowmoney
 
+import android.app.Activity
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.Adapters.CategoryIconAdapter
+import com.example.flowmoney.Models.Category
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import java.io.ByteArrayOutputStream
+import java.util.UUID
 
 class AddNewCategory : AppCompatActivity() {
+    companion object {
+        private const val TAG = "AddNewCategory"
+    }
 
     private lateinit var etName: TextInputEditText
     private lateinit var rvCategoryIcons: RecyclerView
     private lateinit var btnCancel: MaterialButton
     private lateinit var btnSave: MaterialButton
+    private lateinit var toggleIncomeExpense: MaterialButton
 
     private var selectedIconResId: Int = R.drawable.cash // Default icon
+    private var isIncome: Boolean = false // Default to expense category
+
+    // Firebase components
+    private lateinit var firestore: FirebaseFirestore
+    private lateinit var auth: FirebaseAuth
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_new_category)
 
         try {
+            // Initialize Firebase
+            firestore = FirebaseFirestore.getInstance()
+            auth = FirebaseAuth.getInstance()
+
+            // Check if user is logged in
+            if (auth.currentUser == null) {
+                Log.e(TAG, "No user is logged in, redirecting")
+                Toast.makeText(this, "Please log in to add a category", Toast.LENGTH_SHORT).show()
+                finish()
+                return
+            }
+
             // Initialize views
             etName = findViewById(R.id.etName)
             rvCategoryIcons = findViewById(R.id.rvCategoryIcons)
             btnCancel = findViewById(R.id.btnCancel)
             btnSave = findViewById(R.id.btnSave)
+            toggleIncomeExpense = findViewById(R.id.btnToggleType)
+
+            // Set up toggle button
+            toggleIncomeExpense.setOnClickListener {
+                isIncome = !isIncome
+                updateToggleButton()
+            }
+            
+            // Initial button state
+            updateToggleButton()
 
             // Important: Setup RecyclerView first with layout manager
             val layoutManager = GridLayoutManager(this, 4) // 4 columns
@@ -43,9 +87,17 @@ class AddNewCategory : AppCompatActivity() {
 
         } catch (e: Exception) {
             val errorMsg = "Error initializing AddNewCategory: ${e.message}"
-            Log.e("AddNewCategory", errorMsg, e)
+            Log.e(TAG, errorMsg, e)
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun updateToggleButton() {
+        toggleIncomeExpense.text = if (isIncome) "Income" else "Expense"
+        toggleIncomeExpense.icon = ContextCompat.getDrawable(
+            this,
+            if (isIncome) R.drawable.income else R.drawable.shoppingg
+        )
     }
 
     private fun setupIconsRecyclerView() {
@@ -65,23 +117,23 @@ class AddNewCategory : AppCompatActivity() {
                 R.drawable.won
             )
 
-            Log.d("AddNewCategory", "Setting up RecyclerView with ${categoryIcons.size} icons")
+            Log.d(TAG, "Setting up RecyclerView with ${categoryIcons.size} icons")
 
             // Create adapter with proper error handling
             val adapter = CategoryIconAdapter(categoryIcons) { iconResId ->
                 selectedIconResId = iconResId
-                Log.d("AddNewCategory", "Icon selected: $iconResId")
+                Log.d(TAG, "Icon selected: $iconResId")
             }
 
             // Set adapter
             rvCategoryIcons.adapter = adapter
 
             // Log success
-            Log.d("AddNewCategory", "RecyclerView adapter successfully set")
+            Log.d(TAG, "RecyclerView adapter successfully set")
 
         } catch (e: Exception) {
             val errorMsg = "Error setting up RecyclerView: ${e.message}"
-            Log.e("AddNewCategory", errorMsg, e)
+            Log.e(TAG, errorMsg, e)
             Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
         }
     }
@@ -100,22 +152,119 @@ class AddNewCategory : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Create new category with the selected name and icon
-            saveCategory(categoryName, selectedIconResId)
+            // Disable save button to prevent multiple submissions
+            btnSave.isEnabled = false
+            
+            // Show loading indicator
+            Toast.makeText(this, "Creating category...", Toast.LENGTH_SHORT).show()
 
-            // Show success toast
-            Toast.makeText(this, "Category saved successfully!", Toast.LENGTH_SHORT).show()
-
-            // Close the dialog or activity
-            finish()
+            try {
+                // Convert icon to Base64
+                val iconBase64 = getIconAsBase64(this, selectedIconResId)
+                
+                // Create and save the category
+                saveCategory(categoryName, iconBase64)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving category", e)
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                btnSave.isEnabled = true
+            }
         }
     }
 
-    private fun saveCategory(name: String, iconResId: Int) {
-        // TODO: Implement your logic to save the new category
-        // For example:
-        // val newCategory = Category(name = name, iconResId = iconResId)
-        // viewModel.saveCategory(newCategory)
-        Log.d("AddNewCategory", "Saving category: $name with icon: $iconResId")
+    private fun getIconAsBase64(context: Context, resourceId: Int): String {
+        try {
+            Log.d(TAG, "Getting drawable resource for ID: $resourceId")
+
+            // Get the drawable safely
+            val drawable = ContextCompat.getDrawable(context, resourceId)
+                ?: throw IllegalStateException("Could not load drawable for resource ID: $resourceId")
+
+            // Convert drawable to bitmap
+            val bitmap = drawableToBitmap(drawable)
+
+            // Convert bitmap to Base64 string
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+
+            val base64String = Base64.encodeToString(byteArray, Base64.DEFAULT)
+            Log.d(TAG, "Base64 string length: ${base64String.length}")
+
+            return base64String
+        } catch (e: Exception) {
+            Log.e(TAG, "Error converting drawable to Base64", e)
+            throw e
+        }
+    }
+
+    private fun drawableToBitmap(drawable: Drawable): Bitmap {
+        if (drawable is BitmapDrawable) {
+            if (drawable.bitmap != null) {
+                return drawable.bitmap
+            }
+        }
+
+        // Create a bitmap with appropriate dimensions
+        val width = if (drawable.intrinsicWidth <= 0) 1 else drawable.intrinsicWidth
+        val height = if (drawable.intrinsicHeight <= 0) 1 else drawable.intrinsicHeight
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+
+        return bitmap
+    }
+
+    private fun saveCategory(name: String, iconBase64: String) {
+        // Get current user
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
+            Log.e(TAG, "No user is currently logged in")
+            Toast.makeText(this, "You must be logged in to create a category", Toast.LENGTH_SHORT).show()
+            btnSave.isEnabled = true
+            finish()
+            return
+        }
+
+        // Create a unique ID for the category
+        val categoryId = UUID.randomUUID().toString()
+        
+        // Create category object
+        val category = Category(
+            categoryId = categoryId,
+            userId = currentUser.uid,
+            name = name,
+            iconBase64 = iconBase64,
+            isIncome = isIncome,
+            iconResourceId = selectedIconResId
+        )
+        
+        // Set timestamps explicitly
+        val currentTime = System.currentTimeMillis()
+        category.createdAt = currentTime
+        category.updatedAt = currentTime
+
+        // Save to Firestore
+        firestore.collection(Category.COLLECTION_NAME)
+            .document(categoryId)
+            .set(category.toMap())
+            .addOnSuccessListener {
+                Log.d(TAG, "Category successfully added with ID: $categoryId")
+                Toast.makeText(this, "Category created successfully", Toast.LENGTH_SHORT).show()
+
+                // Return result and close activity
+                setResult(Activity.RESULT_OK)
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error adding category", e)
+                Toast.makeText(this, "Failed to create category: ${e.message}", Toast.LENGTH_LONG).show()
+                
+                // Re-enable save button
+                btnSave.isEnabled = true
+            }
     }
 }

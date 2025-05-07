@@ -11,6 +11,7 @@ import com.example.flowmoney.Models.Category
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
 import java.util.Date
+import java.util.UUID
 
 /**
  * Utility class for Firestore operations
@@ -28,6 +29,7 @@ object FirestoreUtils {
      * @param name The category name
      * @param iconResourceId The drawable resource ID of the icon
      * @param isIncome Whether the category is for income
+     * @param userId The ID of the user
      * @param onSuccess Callback when save is successful, returns the created Category
      * @param onFailure Callback when save fails, returns the error message
      */
@@ -36,6 +38,7 @@ object FirestoreUtils {
         name: String,
         iconResourceId: Int,
         isIncome: Boolean,
+        userId: String,
         onSuccess: (Category) -> Unit,
         onFailure: (String) -> Unit
     ) {
@@ -43,24 +46,32 @@ object FirestoreUtils {
             // Convert drawable to base64 string
             val iconBase64 = convertDrawableToBase64(context, iconResourceId)
 
-            // Create a new category object
-            val now = Date()
+            // Generate a new category ID
+            val categoryId = UUID.randomUUID().toString()
+            
+            // Create a new category object using the new constructor
             val newCategory = Category(
+                categoryId = categoryId,
+                userId = userId,
                 name = name,
                 iconBase64 = iconBase64,
-                iconResourceId = iconResourceId,
                 isIncome = isIncome,
-                createdAt = now,
-                updatedAt = now
+                iconResourceId = iconResourceId
             )
+            
+            // Set timestamps
+            val currentTime = System.currentTimeMillis()
+            newCategory.createdAt = currentTime
+            newCategory.updatedAt = currentTime
 
             // Add to Firestore
             db.collection(Category.COLLECTION_NAME)
-                .add(newCategory.toMap())
-                .addOnSuccessListener { documentReference ->
-                    Log.d(TAG, "Category saved with ID: ${documentReference.id}")
-                    // Return the category with the generated ID
-                    onSuccess(newCategory.copy(id = documentReference.id))
+                .document(categoryId)
+                .set(newCategory.toMap())
+                .addOnSuccessListener {
+                    Log.d(TAG, "Category saved with ID: $categoryId")
+                    // Return the category
+                    onSuccess(newCategory)
                 }
                 .addOnFailureListener { e ->
                     Log.e(TAG, "Error adding category", e)
@@ -75,20 +86,32 @@ object FirestoreUtils {
     /**
      * Get all categories from Firestore
      *
+     * @param userId The ID of the user whose categories to fetch
      * @param onSuccess Callback when fetch is successful, returns list of categories
      * @param onFailure Callback when fetch fails, returns the error message
      */
     fun getAllCategories(
+        userId: String,
         onSuccess: (List<Category>) -> Unit,
         onFailure: (String) -> Unit
     ) {
         db.collection(Category.COLLECTION_NAME)
+            .whereEqualTo("user_id", userId)
             .get()
             .addOnSuccessListener { result ->
                 val categories = result.documents.mapNotNull { document ->
                     try {
-                        val category = document.toObject(Category::class.java)
-                        category?.copy(id = document.id)
+                        // Create a new Category object and populate it manually
+                        val category = Category()
+                        category.categoryId = document.getString("category_id") ?: ""
+                        category.userId = document.getString("user_id") ?: ""
+                        category.name = document.getString("name") ?: ""
+                        category.iconBase64 = document.getString("icon_base64") ?: ""
+                        category.isIncome = document.getBoolean("is_income") ?: false
+                        category.createdAt = document.getLong("created_at") ?: 0L
+                        category.updatedAt = document.getLong("updated_at") ?: 0L
+                        
+                        category
                     } catch (e: Exception) {
                         Log.e(TAG, "Error converting document to Category", e)
                         null

@@ -51,7 +51,10 @@ data class Transaction(
     val notes: String = "", // Additional notes/description
 
     @PropertyName("invoice_url")
-    val invoiceUrl: String? = null, // URL to the stored invoice image in Firebase Storage
+    val invoiceUrl: String? = null, // URL to the stored invoice image in Firebase Storage (legacy)
+    
+    @PropertyName("invoice_base64")
+    val invoiceBase64: String? = null, // Base64 encoded invoice image
 
     @PropertyName("tags")
     val tags: List<String> = listOf(), // Optional tags for the transaction
@@ -145,6 +148,22 @@ data class Transaction(
     fun getDateAsDate(): Date {
         return date.toDate()
     }
+    
+    /**
+     * Check if transaction has an invoice
+     */
+    @Exclude
+    fun hasInvoice(): Boolean {
+        return !invoiceBase64.isNullOrEmpty() || !invoiceUrl.isNullOrEmpty()
+    }
+    
+    /**
+     * Get the invoice image (from base64 or URL)
+     */
+    @Exclude
+    fun getInvoiceImage(): String? {
+        return invoiceBase64 ?: invoiceUrl
+    }
 
     /**
      * Convert to a Map for Firestore
@@ -162,6 +181,7 @@ data class Transaction(
             "updated_at" to updatedAt,
             "notes" to notes,
             "invoice_url" to invoiceUrl,
+            "invoice_base64" to invoiceBase64,
             "tags" to tags,
             "location" to location,
             "is_recurring" to isRecurring,
@@ -187,6 +207,7 @@ data class Transaction(
                 updatedAt = data["updated_at"] as? Timestamp,
                 notes = data["notes"] as? String ?: "",
                 invoiceUrl = data["invoice_url"] as? String,
+                invoiceBase64 = data["invoice_base64"] as? String,
                 tags = (data["tags"] as? List<*>)?.filterIsInstance<String>() ?: listOf(),
                 location = data["location"] as? String,
                 isRecurring = data["is_recurring"] as? Boolean ?: false,
@@ -205,7 +226,7 @@ data class Transaction(
             amount: Double,
             date: Date = Date(),
             notes: String = "",
-            invoiceUrl: String? = null
+            invoiceBase64: String? = null
         ): Transaction {
             return Transaction(
                 userId = userId,
@@ -215,7 +236,7 @@ data class Transaction(
                 amount = amount,
                 date = Timestamp(date),
                 notes = notes,
-                invoiceUrl = invoiceUrl
+                invoiceBase64 = invoiceBase64
             )
         }
 
@@ -229,7 +250,7 @@ data class Transaction(
             amount: Double,
             date: Date = Date(),
             notes: String = "",
-            invoiceUrl: String? = null
+            invoiceBase64: String? = null
         ): Transaction {
             return Transaction(
                 userId = userId,
@@ -239,7 +260,7 @@ data class Transaction(
                 amount = amount,
                 date = Timestamp(date),
                 notes = notes,
-                invoiceUrl = invoiceUrl
+                invoiceBase64 = invoiceBase64
             )
         }
 
@@ -253,7 +274,7 @@ data class Transaction(
             amount: Double,
             date: Date = Date(),
             notes: String = "",
-            invoiceUrl: String? = null
+            invoiceBase64: String? = null
         ): Transaction {
             return Transaction(
                 userId = userId,
@@ -263,7 +284,7 @@ data class Transaction(
                 amount = amount,
                 date = Timestamp(date),
                 notes = notes,
-                invoiceUrl = invoiceUrl
+                invoiceBase64 = invoiceBase64
             )
         }
 

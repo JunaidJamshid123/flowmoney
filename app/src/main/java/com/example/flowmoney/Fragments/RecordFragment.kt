@@ -2,11 +2,17 @@ package com.example.flowmoney.Fragments
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.util.Base64
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -15,13 +21,19 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.AddTransaction
+import com.example.flowmoney.Models.Category
+import com.example.flowmoney.Models.Transaction
 import com.example.flowmoney.R
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 class RecordFragment : Fragment() {
+    private val TAG = "RecordFragment"
 
     // View properties
     private lateinit var categorySpinner: Spinner
@@ -34,32 +46,25 @@ class RecordFragment : Fragment() {
     private lateinit var emptyState: View
     private lateinit var fabAdd: FloatingActionButton
 
+    // Data
+    private val transactions = mutableListOf<Transaction>()
+    private val categories = mutableListOf<Category>()
+    private var transactionAdapter: TransactionAdapter? = null
+    private var selectedCategoryPosition = 0
+    private var selectedSortPosition = 0
+
+    // Firebase
+    private lateinit var auth: FirebaseAuth
+    private lateinit var firestore: FirebaseFirestore
+    private var transactionsListener: ListenerRegistration? = null
+
     // Activity result launcher for AddTransaction
     private val addTransactionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val data = result.data
-            if (data != null) {
-                // Process the returned transaction data
-                val amount = data.getDoubleExtra("amount", 0.0)
-                val accountId = data.getStringExtra("accountId") ?: ""
-                val categoryId = data.getStringExtra("categoryId") ?: ""
-                val transactionType = data.getStringExtra("transactionType") ?: "expense"
-                val date = data.getLongExtra("date", System.currentTimeMillis())
-                val notes = data.getStringExtra("notes") ?: ""
-                val hasInvoice = data.getBooleanExtra("hasInvoice", false)
-                val invoiceUri = data.getStringExtra("invoiceUri")
-
-                // Here you would save the transaction to your database
-                saveTransactionToDatabase(amount, accountId, categoryId, transactionType, date, notes, hasInvoice, invoiceUri)
-
-                // Show a success message
-                Toast.makeText(requireContext(), "Transaction added successfully", Toast.LENGTH_SHORT).show()
-
-                // Update UI (refresh transaction list)
-                updateTransactionList()
-            }
+            // Refresh transactions when returning from AddTransaction
+            loadTransactions()
         }
     }
 
@@ -70,19 +75,36 @@ class RecordFragment : Fragment() {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_record, container, false)
 
+        // Initialize Firebase
+        auth = FirebaseAuth.getInstance()
+        firestore = FirebaseFirestore.getInstance()
+
         // Initialize views
         initViews(view)
 
-        // Setup spinners
-        setupSpinners()
-
         // Setup RecyclerView
         setupRecyclerView()
+
+        // Setup spinners
+        setupSpinners()
 
         // Setup click listeners
         setupClickListeners()
 
         return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        // Check if user is logged in
+        if (auth.currentUser == null) {
+            showEmptyState("Please log in to view transactions")
+            return
+        }
+
+        // Load categories first, then transactions
+        loadCategories()
     }
 
     private fun initViews(view: View) {
@@ -97,17 +119,23 @@ class RecordFragment : Fragment() {
         fabAdd = view.findViewById(R.id.fab_add)
     }
 
-    private fun setupSpinners() {
-        // Category spinner setup
-        val categoryOptions = arrayOf("All", "Food", "Transport", "Shopping", "Bills", "Entertainment", "Other")
-        val categoryAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            categoryOptions
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+    private fun setupRecyclerView() {
+        transactionAdapter = TransactionAdapter(transactions, categories) { transaction ->
+            // Handle transaction click
+            Toast.makeText(requireContext(), 
+                "Transaction: ${transaction.amount} on ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(transaction.getDateAsDate())}", 
+                Toast.LENGTH_SHORT).show()
         }
-        categorySpinner.adapter = categoryAdapter
+
+        recyclerRecords.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = transactionAdapter
+            setHasFixedSize(true)
+        }
+    }
+
+    private fun setupSpinners() {
+        // Category spinner will be populated after loading categories from Firestore
 
         // Sort spinner setup
         val sortOptions = arrayOf("Newest", "Oldest", "Highest", "Lowest")
@@ -121,49 +149,89 @@ class RecordFragment : Fragment() {
         sortSpinner.adapter = sortAdapter
     }
 
-    private fun setupRecyclerView() {
-        recyclerRecords.layoutManager = LinearLayoutManager(requireContext())
-        // Set your adapter here
-        // recyclerRecords.adapter = yourAdapter
-
-        // Show empty state if no transactions
-        updateEmptyState()
-    }
-
-    private fun updateEmptyState() {
-        // This is just an example, you should check if your data is empty
-        val hasTransactions = false // Replace with your logic
-        emptyState.visibility = if (hasTransactions) View.GONE else View.VISIBLE
-        recyclerRecords.visibility = if (hasTransactions) View.VISIBLE else View.GONE
-    }
-
     private fun setupClickListeners() {
         fabAdd.setOnClickListener {
             launchAddTransaction()
         }
 
-        // Add listeners for your spinners/filters if needed
-        categorySpinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                // Filter transactions based on selected category
-                updateTransactionList()
+        // Add listeners for your spinners/filters
+        categorySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                selectedCategoryPosition = position
+                filterTransactions()
             }
 
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+            override fun onNothingSelected(parent: AdapterView<*>?) {
                 // Do nothing
             }
-        })
+        }
 
-        sortSpinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                // Sort transactions based on selected option
-                updateTransactionList()
+        sortSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                selectedSortPosition = position
+                filterTransactions()
             }
 
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+            override fun onNothingSelected(parent: AdapterView<*>?) {
                 // Do nothing
             }
-        })
+        }
+    }
+    
+    private fun loadCategories() {
+        val userId = auth.currentUser?.uid ?: return
+        
+        firestore.collection("categories")
+            .whereEqualTo("user_id", userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                categories.clear()
+                
+                // Add "All" category at the beginning
+                val allCategory = Category()
+                allCategory.categoryId = "all"
+                allCategory.name = "All Categories"
+                categories.add(allCategory)
+                
+                // Add categories from Firestore
+                for (document in documents) {
+                    try {
+                        val category = Category()
+                        category.categoryId = document.getString("category_id") ?: ""
+                        category.userId = document.getString("user_id") ?: ""
+                        category.name = document.getString("name") ?: ""
+                        category.iconBase64 = document.getString("icon_base64") ?: ""
+                        category.isIncome = document.getBoolean("is_income") ?: false
+                        
+                        categories.add(category)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing category", e)
+                    }
+                }
+                
+                // Update category spinner
+                updateCategorySpinner()
+                
+                // Load transactions after categories are loaded
+                loadTransactions()
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error loading categories", e)
+                Toast.makeText(context, "Failed to load categories: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Load transactions anyway
+                loadTransactions()
+            }
+    }
+
+    private fun updateCategorySpinner() {
+        val categoryAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            categories.map { it.name }
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        categorySpinner.adapter = categoryAdapter
     }
 
     private fun launchAddTransaction() {
@@ -171,72 +239,232 @@ class RecordFragment : Fragment() {
         addTransactionLauncher.launch(intent)
     }
 
-    private fun saveTransactionToDatabase(
-        amount: Double,
-        accountId: String,
-        categoryId: String,
-        transactionType: String,
-        date: Long,
-        notes: String,
-        hasInvoice: Boolean,
-        invoiceUri: String?
-    ) {
-        // Here you would implement the logic to save the transaction to Firebase
-        // This is just a placeholder for your implementation
-
-        // Example code:
-        // val transaction = Transaction(
-        //     id = UUID.randomUUID().toString(),
-        //     userId = getCurrentUserId(),
-        //     amount = amount,
-        //     accountId = accountId,
-        //     categoryId = categoryId,
-        //     type = transactionType,
-        //     date = date,
-        //     notes = notes,
-        //     hasInvoice = hasInvoice,
-        //     invoiceUri = invoiceUri
-        // )
-        //
-        // FirebaseFirestore.getInstance()
-        //     .collection("transactions")
-        //     .document(transaction.id)
-        //     .set(transaction)
-        //     .addOnSuccessListener {
-        //         // Transaction saved successfully
-        //     }
-        //     .addOnFailureListener { e ->
-        //         // Handle error
-        //     }
+    private fun loadTransactions() {
+        val userId = auth.currentUser?.uid ?: return
+        
+        // Remove any existing listener
+        transactionsListener?.remove()
+        
+        // Create query for transactions
+        val query = firestore.collection("transactions")
+            .whereEqualTo("user_id", userId)
+            .whereEqualTo("is_deleted", false)
+            .orderBy("date", Query.Direction.DESCENDING)
+        
+        // Add real-time listener
+        transactionsListener = query.addSnapshotListener { snapshot, e ->
+            if (e != null) {
+                Log.e(TAG, "Error listening for transactions", e)
+                showEmptyState("Error loading transactions")
+                return@addSnapshotListener
+            }
+            
+            if (snapshot == null || snapshot.isEmpty) {
+                transactions.clear()
+                transactionAdapter?.notifyDataSetChanged()
+                showEmptyState("No transactions yet")
+                updateSummaryValues(0.0, 0.0, 0.0)
+                return@addSnapshotListener
+            }
+            
+            // Parse transactions
+            val fetchedTransactions = snapshot.documents.mapNotNull { doc ->
+                try {
+                    val data = doc.data ?: return@mapNotNull null
+                    Transaction.fromMap(data, doc.id)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing transaction", e)
+                    null
+                }
+            }
+            
+            // Update transactions list
+            transactions.clear()
+            transactions.addAll(fetchedTransactions)
+            
+            // Filter and sort based on current selection
+            filterTransactions()
+            
+            // Update summary values
+            updateSummaryValues(
+                income = transactions.filter { it.type == "income" }.sumOf { it.amount },
+                expense = transactions.filter { it.type == "expense" }.sumOf { it.amount },
+                savings = transactions.filter { it.type == "saving" }.sumOf { it.amount }
+            )
+            
+            // Show/hide empty state
+            if (transactions.isEmpty()) {
+                showEmptyState("No transactions yet")
+            } else {
+                hideEmptyState()
+            }
+        }
     }
 
-    private fun updateTransactionList() {
-        // Implement logic to refresh transaction list based on filters
-        // This would typically involve querying your database with the filters
-        // and updating your RecyclerView adapter
-
-        // After updating the list, update the empty state
-        updateEmptyState()
-
-        // Also update summary values
-        updateSummaryValues()
+    private fun filterTransactions() {
+        // Skip if adapter isn't initialized yet
+        if (transactionAdapter == null) return
+        
+        // Make a copy of all transactions
+        val filteredList = transactions.toMutableList()
+        
+        // Apply category filter if not "All"
+        if (selectedCategoryPosition > 0 && categories.size > selectedCategoryPosition) {
+            val selectedCategory = categories[selectedCategoryPosition]
+            filteredList.retainAll { it.categoryId == selectedCategory.categoryId }
+        }
+        
+        // Apply sorting
+        when (selectedSortPosition) {
+            0 -> filteredList.sortByDescending { it.date.seconds } // Newest
+            1 -> filteredList.sortBy { it.date.seconds } // Oldest
+            2 -> filteredList.sortByDescending { it.amount } // Highest
+            3 -> filteredList.sortBy { it.amount } // Lowest
+        }
+        
+        // Update adapter with filtered list
+        transactionAdapter?.updateTransactions(filteredList)
+        
+        // Show/hide empty state
+        if (filteredList.isEmpty()) {
+            showEmptyState("No transactions match your filters")
+        } else {
+            hideEmptyState()
+        }
     }
 
-    private fun updateSummaryValues() {
-        // Example implementation - replace with your actual data
-        val totalIncome = 1000.0
-        val totalExpenses = 750.0
-        val totalSavings = 250.0
-        val balance = totalIncome - totalExpenses
-
+    private fun updateSummaryValues(income: Double, expense: Double, savings: Double) {
+        val balance = income - expense - savings
+        
         textTotalBalance.text = String.format("$%.2f", balance)
-        textIncome.text = String.format("$%.2f", totalIncome)
-        textExpenses.text = String.format("$%.2f", totalExpenses)
-        textSavings.text = String.format("$%.2f", totalSavings)
+        textIncome.text = String.format("$%.2f", income)
+        textExpenses.text = String.format("$%.2f", expense)
+        textSavings.text = String.format("$%.2f", savings)
+    }
+
+    private fun showEmptyState(message: String) {
+        // Set empty state message here if you have a text view for it
+        emptyState.visibility = View.VISIBLE
+        recyclerRecords.visibility = View.GONE
+    }
+    
+    private fun hideEmptyState() {
+        emptyState.visibility = View.GONE
+        recyclerRecords.visibility = View.VISIBLE
+    }
+    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Clean up listener to prevent memory leaks
+        transactionsListener?.remove()
+    }
+
+    /**
+     * Helper method to convert base64 string to bitmap
+     */
+    private fun base64ToBitmap(base64String: String?): Bitmap? {
+        if (base64String.isNullOrEmpty()) return null
+        
+        return try {
+            val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error converting base64 to bitmap", e)
+            null
+        }
     }
 
     companion object {
         @JvmStatic
         fun newInstance() = RecordFragment()
+    }
+    
+    /**
+     * Adapter for transactions
+     */
+    inner class TransactionAdapter(
+        private var transactionList: List<Transaction>,
+        private val categoryList: List<Category>,
+        private val onItemClick: (Transaction) -> Unit
+    ) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+        
+        fun updateTransactions(newTransactions: List<Transaction>) {
+            transactionList = newTransactions
+            notifyDataSetChanged()
+        }
+        
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransactionViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_transaction, parent, false)
+            return TransactionViewHolder(view)
+        }
+        
+        override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
+            val transaction = transactionList[position]
+            holder.bind(transaction)
+        }
+        
+        override fun getItemCount(): Int = transactionList.size
+        
+        inner class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private val categoryIcon: ImageView = itemView.findViewById(R.id.transaction_icon)
+            private val categoryName: TextView = itemView.findViewById(R.id.category_name)
+            private val transactionDate: TextView = itemView.findViewById(R.id.transaction_date)
+            private val transactionAmount: TextView = itemView.findViewById(R.id.transaction_amount)
+            
+            fun bind(transaction: Transaction) {
+                // Find category
+                val category = categoryList.find { it.categoryId == transaction.categoryId }
+                
+                // Set category name
+                categoryName.text = category?.name ?: "Unknown"
+                
+                // Set date
+                val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                transactionDate.text = dateFormat.format(transaction.getDateAsDate())
+                
+                // Set amount with appropriate color and sign
+                val amount = transaction.getSignedAmount()
+                transactionAmount.text = String.format("$%,.2f", amount)
+                
+                // Set color based on transaction type
+                val textColor = when (transaction.type) {
+                    "income" -> getColorFromResource(R.color.income_green) 
+                    "expense" -> getColorFromResource(R.color.expense_red)
+                    "saving" -> getColorFromResource(R.color.saving_blue)
+                    else -> getColorFromResource(R.color.black)
+                }
+                transactionAmount.setTextColor(textColor)
+                
+                // Set icon from base64 if available
+                if (!category?.iconBase64.isNullOrEmpty()) {
+                    val iconBitmap = base64ToBitmap(category?.iconBase64)
+                    if (iconBitmap != null) {
+                        categoryIcon.setImageBitmap(iconBitmap)
+                    } else {
+                        setDefaultIcon(transaction.type)
+                    }
+                } else {
+                    setDefaultIcon(transaction.type)
+                }
+                
+                // Set click listener
+                itemView.setOnClickListener { onItemClick(transaction) }
+            }
+            
+            private fun setDefaultIcon(transactionType: String) {
+                val iconResource = when (transactionType) {
+                    "income" -> R.drawable.income
+                    "expense" -> R.drawable.shoppingg
+                    "saving" -> R.drawable.saving
+                    else -> R.drawable.cash
+                }
+                categoryIcon.setImageResource(iconResource)
+            }
+            
+            private fun getColorFromResource(colorResId: Int): Int {
+                return requireContext().getColor(colorResId)
+            }
+        }
     }
 }
