@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -33,9 +34,11 @@ class AddNewCategory : AppCompatActivity() {
     private lateinit var btnCancel: MaterialButton
     private lateinit var btnSave: MaterialButton
     private lateinit var toggleIncomeExpense: MaterialButton
+    private lateinit var toggleSaving: MaterialButton
+    private lateinit var progressBar: View
 
     private var selectedIconResId: Int = R.drawable.cash // Default icon
-    private var isIncome: Boolean = false // Default to expense category
+    private var categoryType: String = "expense" // Default to expense category
 
     // Firebase components
     private lateinit var firestore: FirebaseFirestore
@@ -64,17 +67,30 @@ class AddNewCategory : AppCompatActivity() {
             btnCancel = findViewById(R.id.btnCancel)
             btnSave = findViewById(R.id.btnSave)
             toggleIncomeExpense = findViewById(R.id.btnToggleType)
+            toggleSaving = findViewById(R.id.btnToggleSaving)
+            progressBar = findViewById(R.id.progressBar)
 
-            // Set up toggle button
+            // Set up toggle button for income/expense
             toggleIncomeExpense.setOnClickListener {
-                isIncome = !isIncome
-                updateToggleButton()
+                if (categoryType == "saving") {
+                    // Can't toggle between income/expense while in saving mode
+                    return@setOnClickListener
+                }
+                
+                categoryType = if (categoryType == "expense") "income" else "expense"
+                updateToggleButtons()
+            }
+            
+            // Set up toggle button for saving
+            toggleSaving.setOnClickListener {
+                categoryType = if (categoryType == "saving") "expense" else "saving"
+                updateToggleButtons()
             }
             
             // Initial button state
-            updateToggleButton()
+            updateToggleButtons()
 
-            // Important: Setup RecyclerView first with layout manager
+            // Setup RecyclerView with layout manager
             val layoutManager = GridLayoutManager(this, 4) // 4 columns
             rvCategoryIcons.layoutManager = layoutManager
 
@@ -92,12 +108,40 @@ class AddNewCategory : AppCompatActivity() {
         }
     }
 
-    private fun updateToggleButton() {
-        toggleIncomeExpense.text = if (isIncome) "Income" else "Expense"
-        toggleIncomeExpense.icon = ContextCompat.getDrawable(
-            this,
-            if (isIncome) R.drawable.income else R.drawable.shoppingg
-        )
+    private fun updateToggleButtons() {
+        // Update income/expense toggle
+        if (categoryType == "income") {
+            toggleIncomeExpense.text = "Income"
+            toggleIncomeExpense.icon = ContextCompat.getDrawable(this, R.drawable.income)
+            toggleIncomeExpense.setBackgroundColor(ContextCompat.getColor(this, R.color.income_green))
+            toggleIncomeExpense.setTextColor(ContextCompat.getColor(this, R.color.white))
+        } else {
+            toggleIncomeExpense.text = "Expense"
+            toggleIncomeExpense.icon = ContextCompat.getDrawable(this, R.drawable.shoppingg)
+            toggleIncomeExpense.setBackgroundColor(ContextCompat.getColor(this, R.color.expense_red))
+            toggleIncomeExpense.setTextColor(ContextCompat.getColor(this, R.color.white))
+        }
+        
+        // Update saving toggle - use different style to show if it's selected
+        if (categoryType == "saving") {
+            toggleSaving.text = "Saving"
+            toggleSaving.icon = ContextCompat.getDrawable(this, R.drawable.saving)
+            toggleSaving.setBackgroundColor(ContextCompat.getColor(this, R.color.saving_blue))
+            toggleSaving.setTextColor(ContextCompat.getColor(this, R.color.white))
+            
+            // Disable income/expense toggle while in saving mode
+            toggleIncomeExpense.isEnabled = false
+            toggleIncomeExpense.alpha = 0.5f
+        } else {
+            toggleSaving.text = "Saving"
+            toggleSaving.icon = ContextCompat.getDrawable(this, R.drawable.saving)
+            toggleSaving.setBackgroundColor(ContextCompat.getColor(this, R.color.light_gray))
+            toggleSaving.setTextColor(ContextCompat.getColor(this, R.color.black))
+            
+            // Enable income/expense toggle when not in saving mode
+            toggleIncomeExpense.isEnabled = true
+            toggleIncomeExpense.alpha = 1.0f
+        }
     }
 
     private fun setupIconsRecyclerView() {
@@ -119,10 +163,14 @@ class AddNewCategory : AppCompatActivity() {
 
             Log.d(TAG, "Setting up RecyclerView with ${categoryIcons.size} icons")
 
-            // Create adapter with proper error handling
+            // Create adapter with proper selection handling
             val adapter = CategoryIconAdapter(categoryIcons) { iconResId ->
+                // Track the selected icon
                 selectedIconResId = iconResId
                 Log.d(TAG, "Icon selected: $iconResId")
+                
+                // Show visual feedback (we'll update the adapter to highlight selected icon)
+                (rvCategoryIcons.adapter as CategoryIconAdapter).setSelectedIcon(iconResId)
             }
 
             // Set adapter
@@ -154,6 +202,7 @@ class AddNewCategory : AppCompatActivity() {
 
             // Disable save button to prevent multiple submissions
             btnSave.isEnabled = false
+            progressBar.visibility = View.VISIBLE
             
             // Show loading indicator
             Toast.makeText(this, "Creating category...", Toast.LENGTH_SHORT).show()
@@ -168,6 +217,7 @@ class AddNewCategory : AppCompatActivity() {
                 Log.e(TAG, "Error saving category", e)
                 Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 btnSave.isEnabled = true
+                progressBar.visibility = View.GONE
             }
         }
     }
@@ -225,6 +275,7 @@ class AddNewCategory : AppCompatActivity() {
             Log.e(TAG, "No user is currently logged in")
             Toast.makeText(this, "You must be logged in to create a category", Toast.LENGTH_SHORT).show()
             btnSave.isEnabled = true
+            progressBar.visibility = View.GONE
             finish()
             return
         }
@@ -232,7 +283,9 @@ class AddNewCategory : AppCompatActivity() {
         // Create a unique ID for the category
         val categoryId = UUID.randomUUID().toString()
         
-        // Create category object
+        // Create category object - handle the isIncome property correctly
+        val isIncome = categoryType == "income"
+        
         val category = Category(
             categoryId = categoryId,
             userId = currentUser.uid,
@@ -246,11 +299,19 @@ class AddNewCategory : AppCompatActivity() {
         val currentTime = System.currentTimeMillis()
         category.createdAt = currentTime
         category.updatedAt = currentTime
+        
+        // Add category type for the saving case
+        val categoryData = category.toMap().toMutableMap()
+        if (categoryType == "saving") {
+            categoryData["category_type"] = "saving"
+        } else {
+            categoryData["category_type"] = if (isIncome) "income" else "expense"
+        }
 
         // Save to Firestore
-        firestore.collection(Category.COLLECTION_NAME)
+        firestore.collection("categories")
             .document(categoryId)
-            .set(category.toMap())
+            .set(categoryData)
             .addOnSuccessListener {
                 Log.d(TAG, "Category successfully added with ID: $categoryId")
                 Toast.makeText(this, "Category created successfully", Toast.LENGTH_SHORT).show()
@@ -265,6 +326,7 @@ class AddNewCategory : AppCompatActivity() {
                 
                 // Re-enable save button
                 btnSave.isEnabled = true
+                progressBar.visibility = View.GONE
             }
     }
 }

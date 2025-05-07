@@ -74,4 +74,18 @@ class CategoryIconAdapter(
 
     // Method to get currently selected icon resource ID
     fun getSelectedIconResId(): Int = icons[selectedPosition]
+    
+    // Method to set selected icon by its resource ID
+    fun setSelectedIcon(iconResId: Int) {
+        // Find the position of the icon in the list
+        val position = icons.indexOf(iconResId)
+        if (position != -1 && position != selectedPosition) {
+            val oldPosition = selectedPosition
+            selectedPosition = position
+            
+            // Notify adapter to refresh the affected items
+            notifyItemChanged(oldPosition)
+            notifyItemChanged(selectedPosition)
+        }
+    }
 }

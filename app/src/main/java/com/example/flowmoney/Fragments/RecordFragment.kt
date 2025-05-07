@@ -121,10 +121,10 @@ class RecordFragment : Fragment() {
 
     private fun setupRecyclerView() {
         transactionAdapter = TransactionAdapter(transactions, categories) { transaction ->
-            // Handle transaction click
-            Toast.makeText(requireContext(), 
-                "Transaction: ${transaction.amount} on ${SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(transaction.getDateAsDate())}", 
-                Toast.LENGTH_SHORT).show()
+            // Launch transaction details activity
+            val intent = Intent(requireContext(), com.example.flowmoney.Activities.TransactionDetails::class.java)
+            intent.putExtra(com.example.flowmoney.Activities.TransactionDetails.EXTRA_TRANSACTION_ID, transaction.transactionId)
+            startActivity(intent)
         }
 
         recyclerRecords.apply {

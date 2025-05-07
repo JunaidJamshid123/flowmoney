@@ -144,10 +144,11 @@ class AccountsFragment : Fragment() {
 
             val accountsCollection = firestore.collection("accounts")
 
-            // Create query that filters by user_id
+            // Simpler query to avoid index issues - just filter by user_id without complex ordering
             val query = accountsCollection
                 .whereEqualTo("user_id", currentUser.uid)
-                .orderBy("created_at", Query.Direction.DESCENDING)
+                // Use a simple field for ordering that doesn't require a composite index
+                .orderBy("account_name") 
 
             Log.d(TAG, "Querying accounts for user ID: ${currentUser.uid}")
 
@@ -173,11 +174,16 @@ class AccountsFragment : Fragment() {
 
                 val accounts = snapshot.mapNotNull { doc ->
                     try {
-                        val account = doc.toObject(Account::class.java)
-                        // Ensure accountId is set if it's not coming from Firestore
-                        if (account.accountId.isEmpty()) {
-                            account.accountId = doc.id
-                        }
+                        val account = Account()
+                        account.accountId = doc.getString("account_id") ?: doc.id
+                        account.userId = doc.getString("user_id") ?: ""
+                        account.accountName = doc.getString("account_name") ?: ""
+                        account.balance = doc.getDouble("balance") ?: 0.0
+                        account.accountType = doc.getString("account_type") ?: ""
+                        account.accountImageUrl = doc.getString("account_image_url")
+                        account.note = doc.getString("note")
+                        account.createdAt = doc.getLong("created_at") ?: 0L
+                        account.updatedAt = doc.getLong("updated_at") ?: 0L
                         account
                     } catch (e: Exception) {
                         Log.e(TAG, "Error converting document to Account", e)
