@@ -18,8 +18,7 @@
         <!-- Category Icon -->
         <FrameLayout
             android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/category_icon_background">
+            android:layout_height="48dp">
 
             <ImageView
                 android:id="@+id/image_category"
