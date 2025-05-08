@@ -23,29 +23,51 @@ class ExpenseChartView @JvmOverloads constructor(
     private val linePaint = Paint().apply {
         isAntiAlias = true
         style = Paint.Style.STROKE
-        strokeWidth = 4f
-        color = Color.parseColor("#27865C")
+        strokeWidth = 3f
+        color = Color.parseColor("#26A69A")
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
     }
 
     private val fillPaint = Paint().apply {
         isAntiAlias = true
         style = Paint.Style.FILL
-        color = Color.parseColor("#1A27865C")
+        color = Color.parseColor("#1A26A69A")
     }
 
     private val dashPaint = Paint().apply {
         isAntiAlias = true
         style = Paint.Style.STROKE
-        strokeWidth = 2f
-        color = Color.parseColor("#AAAAAA")
-        pathEffect = DashPathEffect(floatArrayOf(10f, 5f), 0f)
+        strokeWidth = 1.5f
+        color = Color.parseColor("#BBBBBB")
+        pathEffect = DashPathEffect(floatArrayOf(6f, 4f), 0f)
     }
 
     private val gridPaint = Paint().apply {
         isAntiAlias = true
         style = Paint.Style.STROKE
-        strokeWidth = 1f
-        color = Color.parseColor("#DDDDDD")
+        strokeWidth = 0.8f
+        color = Color.parseColor("#EEEEEE")
+    }
+
+    private val labelPaint = Paint().apply {
+        isAntiAlias = true
+        textSize = 30f
+        color = Color.parseColor("#888888")
+        textAlign = Paint.Align.CENTER
+    }
+
+    private val highlightPaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.FILL
+        color = Color.parseColor("#26A69A")
+    }
+
+    private val highlightStrokePaint = Paint().apply {
+        isAntiAlias = true
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+        color = Color.WHITE
     }
 
     private val path = Path()
@@ -192,11 +214,30 @@ class ExpenseChartView @JvmOverloads constructor(
      * Draw horizontal grid lines
      */
     private fun drawGridLines(canvas: Canvas, height: Float) {
-        // Draw 4 horizontal grid lines
+        // Draw 4 horizontal grid lines with labels
         val gridCount = 4
+        val valueRange = (maxValue - minValue).coerceAtLeast(1f)
+        
         for (i in 0..gridCount) {
             val y = height - (height * i / gridCount)
             canvas.drawLine(0f, y, width.toFloat(), y, gridPaint)
+            
+            // Add value labels at each grid line
+            if (maxValue > 0) {
+                val value = minValue + (valueRange * i / gridCount)
+                val label = formatCurrency(value.toDouble())
+                
+                // Make label paint size relative to view size
+                labelPaint.textSize = height * 0.04f
+                
+                // Draw value label on the left side
+                canvas.drawText(
+                    label,
+                    10f + labelPaint.textSize,
+                    y - 10f,
+                    labelPaint
+                )
+            }
         }
     }
     
@@ -253,19 +294,30 @@ class ExpenseChartView @JvmOverloads constructor(
         // Draw vertical dashed line
         canvas.drawLine(highlightedX, 0f, highlightedX, height, dashPaint)
         
-        // Draw point circle
-        canvas.drawCircle(highlightedX, highlightedY, 8f, Paint().apply {
+        // Draw point circle with outer glow effect
+        // First draw larger shadow/glow
+        canvas.drawCircle(highlightedX, highlightedY, 16f, Paint().apply {
             isAntiAlias = true
             style = Paint.Style.FILL
-            color = Color.parseColor("#27865C")
+            color = Color.parseColor("#2026A69A") // 20% opacity shadow
         })
         
-        canvas.drawCircle(highlightedX, highlightedY, 12f, Paint().apply {
-            isAntiAlias = true
-            style = Paint.Style.STROKE
-            strokeWidth = 2f
-            color = Color.WHITE
-        })
+        // Draw the main point
+        canvas.drawCircle(highlightedX, highlightedY, 8f, highlightPaint)
+        
+        // Draw white stroke around point
+        canvas.drawCircle(highlightedX, highlightedY, 10f, highlightStrokePaint)
+        
+        // Draw label at the bottom if needed (for day/week/month view)
+        if (currentPeriod != TimePeriod.YEAR && highlightedIndex < labels.size) {
+            val label = labels[highlightedIndex]
+            canvas.drawText(
+                label,
+                highlightedX,
+                height - 10f,
+                labelPaint
+            )
+        }
     }
 
     /**
@@ -382,6 +434,16 @@ class ExpenseChartView @JvmOverloads constructor(
         }
         
         return monthlyData
+    }
+    
+    /**
+     * Format a value as currency
+     */
+    private fun formatCurrency(value: Double): String {
+        if (value >= 1000) {
+            return "$${String.format("%.1f", value / 1000)}K"
+        }
+        return "$${String.format("%.0f", value)}"
     }
     
     /**

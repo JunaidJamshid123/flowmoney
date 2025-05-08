@@ -235,7 +235,7 @@ class AnalysisFragment : Fragment() {
         calendar.add(Calendar.YEAR, -1)
         val oneYearAgo = Timestamp(calendar.time)
         
-        // Query transactions
+        // Query transactions - keep query simple and filter in code
         firestore.collection("transactions")
             .whereEqualTo("user_id", userId)
             .get()
@@ -246,16 +246,23 @@ class AnalysisFragment : Fragment() {
                     try {
                         val data = document.data
                         val transaction = Transaction.fromMap(data, document.id)
-                        allTransactions.add(transaction)
                         
-                        // Add category ID to load if not already loaded
-                        if (transaction.categoryId.isNotEmpty() && !categories.containsKey(transaction.categoryId)) {
-                            loadCategory(transaction.categoryId)
+                        // Only add non-deleted transactions
+                        if (!transaction.isDeleted) {
+                            allTransactions.add(transaction)
+                            
+                            // Add category ID to load if not already loaded
+                            if (transaction.categoryId.isNotEmpty() && !categories.containsKey(transaction.categoryId)) {
+                                loadCategory(transaction.categoryId)
+                            }
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Error parsing transaction", e)
                     }
                 }
+                
+                // Log transaction count for debugging
+                Log.d(TAG, "Loaded ${allTransactions.size} transactions")
                 
                 // Initial filter and update
                 filterTransactions()
@@ -307,9 +314,57 @@ class AnalysisFragment : Fragment() {
     private fun filterTransactions() {
         // Filter by current transaction type
         filteredTransactions.clear()
-        filteredTransactions.addAll(allTransactions.filter { 
-            it.type.equals(currentTransactionType, ignoreCase = true) 
-        })
+        
+        // First filter by transaction type
+        val typeFiltered = allTransactions.filter { 
+            it.type.equals(currentTransactionType, ignoreCase = true)
+        }
+        
+        // Then filter by time period
+        val calendar = Calendar.getInstance()
+        val today = Calendar.getInstance()
+        
+        val timeFiltered = when (currentTimePeriod) {
+            ExpenseChartView.TimePeriod.DAY -> {
+                // Only today's transactions
+                typeFiltered.filter {
+                    val transactionCal = Calendar.getInstance()
+                    transactionCal.time = it.getDateAsDate()
+                    
+                    transactionCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                    transactionCal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+                }
+            }
+            ExpenseChartView.TimePeriod.WEEK -> {
+                // Last 7 days
+                calendar.add(Calendar.DAY_OF_YEAR, -7)
+                val weekAgo = calendar.timeInMillis
+                
+                typeFiltered.filter {
+                    it.getDateAsDate().time >= weekAgo
+                }
+            }
+            ExpenseChartView.TimePeriod.MONTH -> {
+                // Last 30 days
+                calendar.add(Calendar.DAY_OF_YEAR, -30)
+                val monthAgo = calendar.timeInMillis
+                
+                typeFiltered.filter {
+                    it.getDateAsDate().time >= monthAgo
+                }
+            }
+            ExpenseChartView.TimePeriod.YEAR -> {
+                // Last 365 days
+                calendar.add(Calendar.DAY_OF_YEAR, -365)
+                val yearAgo = calendar.timeInMillis
+                
+                typeFiltered.filter {
+                    it.getDateAsDate().time >= yearAgo
+                }
+            }
+        }
+        
+        filteredTransactions.addAll(timeFiltered)
         
         // Sort transactions
         sortTransactions()
@@ -317,6 +372,9 @@ class AnalysisFragment : Fragment() {
         // Update UI
         updateTransactionAdapter()
         updateChart()
+        
+        // Log for debugging
+        Log.d(TAG, "Filtered to ${filteredTransactions.size} transactions of type $currentTransactionType")
     }
     
     private fun sortTransactions() {
@@ -357,6 +415,15 @@ class AnalysisFragment : Fragment() {
             View.VISIBLE
         } else {
             View.GONE
+        }
+        
+        // Update title in the top spending section
+        val topSpendingText = view?.findViewById<TextView>(R.id.tv_top_spending)
+        topSpendingText?.text = when (currentTimePeriod) {
+            ExpenseChartView.TimePeriod.DAY -> "Today's ${currentTransactionType.capitalize(Locale.ROOT)}"
+            ExpenseChartView.TimePeriod.WEEK -> "This Week's ${currentTransactionType.capitalize(Locale.ROOT)}"
+            ExpenseChartView.TimePeriod.YEAR -> "This Year's ${currentTransactionType.capitalize(Locale.ROOT)}"
+            else -> "This Month's ${currentTransactionType.capitalize(Locale.ROOT)}"
         }
     }
     

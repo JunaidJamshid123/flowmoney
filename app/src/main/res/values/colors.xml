@@ -23,4 +23,9 @@
     <color name="income_green">#FF4CAF50</color>
     <color name="expense_red">#FFE53935</color>
     <color name="saving_blue">#FF2196F3</color>
+    
+    <!-- Light versions for backgrounds -->
+    <color name="income_green_light">#20A4F5A4</color>
+    <color name="expense_red_light">#20FF8A80</color>
+    <color name="saving_blue_light">#2090CAF9</color>
 </resources>

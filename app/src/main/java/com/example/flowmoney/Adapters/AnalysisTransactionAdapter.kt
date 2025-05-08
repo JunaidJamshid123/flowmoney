@@ -82,6 +82,22 @@ class AnalysisTransactionAdapter(
         }
         holder.transactionAmount.setTextColor(context.getColor(colorRes))
         
+        // Set category color for the text and icon background
+        val cardView = holder.itemView.findViewById<androidx.cardview.widget.CardView>(R.id.category_icon_card)
+        if (cardView != null) {
+            // Apply background color based on transaction type
+            val bgColor = when (transaction.type) {
+                "income" -> context.getColor(R.color.income_green_light)
+                "expense" -> context.getColor(R.color.expense_red_light)
+                "saving" -> context.getColor(R.color.saving_blue_light)
+                else -> context.getColor(R.color.gray_light)
+            }
+            cardView.setCardBackgroundColor(bgColor)
+            
+            // Apply the same color to category name
+            holder.transactionCategory.setTextColor(context.getColor(colorRes))
+        }
+        
         // Set category icon from base64 if available, otherwise use default icon
         if (category != null && !category.iconBase64.isNullOrEmpty()) {
             try {

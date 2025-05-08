@@ -194,69 +194,120 @@
     </androidx.cardview.widget.CardView>
 
     <!-- Month labels -->
-    <LinearLayout
+    <HorizontalScrollView
         android:id="@+id/month_labels"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="12dp"
-        android:orientation="horizontal"
+        android:layout_marginTop="4dp"
+        android:scrollbars="none"
+        android:visibility="visible"
         app:layout_constraintTop_toBottomOf="@id/graph_card">
 
-        <TextView
-            android:layout_width="0dp"
+        <LinearLayout
+            android:id="@+id/month_labels_container"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Mar"
-            android:textColor="#228D57"
-            android:textSize="12sp"/>
+            android:orientation="horizontal"
+            android:paddingVertical="8dp">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Apr"
-            android:textColor="#228D57"
-            android:textSize="12sp"/>
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Jan"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="May"
-            android:textColor="#228D57"
-            android:textSize="12sp"/>
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Feb"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Jun"
-            android:textColor="#228D57"
-            android:textSize="12sp"/>
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Mar"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Jul"
-            android:textColor="#228D57"
-            android:textSize="12sp"/>
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Apr"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="Aug"
-            android:textColor="#228D57"
-            android:textSize="12sp"/>
-    </LinearLayout>
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="May"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Jun"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Jul"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Aug"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Sep"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Oct"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Nov"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+
+            <TextView
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Dec"
+                android:textColor="#228D57"
+                android:textSize="12sp"/>
+        </LinearLayout>
+    </HorizontalScrollView>
 
     <!-- Top Spending header -->
     <androidx.constraintlayout.widget.ConstraintLayout
