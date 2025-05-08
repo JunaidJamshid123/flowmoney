@@ -55,24 +55,16 @@
                     android:layout_height="wrap_content"
                     android:padding="16dp">
 
-                    <androidx.cardview.widget.CardView
-                        android:id="@+id/iconContainer"
+                    <de.hdodenhof.circleimageview.CircleImageView
+                        android:id="@+id/ivCategoryIcon"
                         android:layout_width="48dp"
                         android:layout_height="48dp"
-                        app:cardBackgroundColor="#8B4513"
-                        app:cardCornerRadius="24dp"
-                        app:cardElevation="0dp"
+                        android:src="@drawable/ic_baby_bottle"
+                        app:civ_border_width="1.5dp"
+                        app:civ_border_color="#E0E0E0"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
-
-                        <ImageView
-                            android:id="@+id/ivCategoryIcon"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:padding="10dp"
-                            android:src="@drawable/ic_baby_bottle" />
-                    </androidx.cardview.widget.CardView>
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/tvCategoryName"
@@ -84,7 +76,7 @@
                         android:textColor="#333333"
                         android:textSize="20sp"
                         app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toEndOf="@+id/iconContainer"
+                        app:layout_constraintStart_toEndOf="@+id/ivCategoryIcon"
                         app:layout_constraintTop_toTopOf="parent" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.cardview.widget.CardView>

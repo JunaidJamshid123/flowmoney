@@ -8,13 +8,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.Models.Category
 import com.example.flowmoney.R
 import com.example.flowmoney.SetBudget
+import de.hdodenhof.circleimageview.CircleImageView
 
 class BudgetCategoryAdapter(
     private val context: Context,
@@ -22,8 +21,7 @@ class BudgetCategoryAdapter(
 ) : RecyclerView.Adapter<BudgetCategoryAdapter.ViewHolder>() {
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val categoryBackground: FrameLayout = itemView.findViewById(R.id.fl_category_background)
-        val categoryIcon: ImageView = itemView.findViewById(R.id.iv_category_icon)
+        val categoryIcon: CircleImageView = itemView.findViewById(R.id.fl_category_background)
         val categoryName: TextView = itemView.findViewById(R.id.tv_category_name)
         val setBudgetButton: Button = itemView.findViewById(R.id.btn_set_category_budget)
     }
@@ -47,6 +45,14 @@ class BudgetCategoryAdapter(
                 val decodedBytes = Base64.decode(category.iconBase64, Base64.DEFAULT)
                 val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
                 holder.categoryIcon.setImageBitmap(bitmap)
+                
+                // Set border color based on income/expense
+                val borderColor = if (category.isIncome) {
+                    context.getColor(R.color.income_green)
+                } else {
+                    context.getColor(R.color.expense_red)
+                }
+                holder.categoryIcon.setBorderColor(borderColor)
             } catch (e: Exception) {
                 holder.categoryIcon.setImageResource(R.drawable.shoppingg)
             }
@@ -54,13 +60,13 @@ class BudgetCategoryAdapter(
             holder.categoryIcon.setImageResource(R.drawable.shoppingg)
         }
         
-        // Set background color based on income/expense
-        val backgroundColor = if (category.isIncome) {
+        // Set button style based on income/expense type
+        val buttonColor = if (category.isIncome) {
             context.getColor(R.color.income_green)
         } else {
             context.getColor(R.color.expense_red)
         }
-        holder.categoryBackground.setBackgroundColor(backgroundColor)
+        holder.setBudgetButton.setBackgroundColor(buttonColor)
         
         // Set button click listener
         holder.setBudgetButton.setOnClickListener {

@@ -13,12 +13,14 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.flowmoney.Models.Budget
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import de.hdodenhof.circleimageview.CircleImageView
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -27,13 +29,12 @@ class SetBudget : AppCompatActivity() {
     
     // UI components
     private lateinit var tvSetBudgetTitle: TextView
-    private lateinit var ivCategoryIcon: ImageView
+    private lateinit var ivCategoryIcon: CircleImageView
     private lateinit var tvCategoryName: TextView
     private lateinit var tvMonth: TextView
     private lateinit var etLimit: EditText
     private lateinit var btnCancel: Button
     private lateinit var btnSet: Button
-    private lateinit var iconContainer: CardView
     
     // Firebase
     private lateinit var firestore: FirebaseFirestore
@@ -104,7 +105,6 @@ class SetBudget : AppCompatActivity() {
         etLimit = findViewById(R.id.etLimit)
         btnCancel = findViewById(R.id.btnCancel)
         btnSet = findViewById(R.id.btnSet)
-        iconContainer = findViewById(R.id.iconContainer)
     }
     
     private fun setupViews() {
@@ -120,6 +120,14 @@ class SetBudget : AppCompatActivity() {
                 val decodedBytes = Base64.decode(categoryIcon, Base64.DEFAULT)
                 val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
                 ivCategoryIcon.setImageBitmap(bitmap)
+                
+                // Set border color based on income/expense
+                val borderColor = if (isIncome) {
+                    ContextCompat.getColor(this, R.color.income_green)
+                } else {
+                    ContextCompat.getColor(this, R.color.expense_red)
+                }
+                ivCategoryIcon.setBorderColor(borderColor)
             } catch (e: Exception) {
                 Log.e(TAG, "Error decoding icon: ${e.message}")
                 ivCategoryIcon.setImageResource(R.drawable.shoppingg)
@@ -127,14 +135,6 @@ class SetBudget : AppCompatActivity() {
         } else {
             ivCategoryIcon.setImageResource(R.drawable.shoppingg)
         }
-        
-        // Set icon background color based on income/expense
-        val iconBackgroundColor = if (isIncome) {
-            getColor(R.color.income_green)
-        } else {
-            getColor(R.color.expense_red)
-        }
-        iconContainer.setCardBackgroundColor(iconBackgroundColor)
         
         // Set month text
         val monthFormat = SimpleDateFormat("MMMM, yyyy", Locale.getDefault())

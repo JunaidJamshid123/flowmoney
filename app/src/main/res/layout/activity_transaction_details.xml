@@ -364,6 +364,20 @@
                 android:textAllCaps="false"
                 android:textColor="@color/white" />
 
+            <!-- Delete Transaction Button -->
+            <Button
+                android:id="@+id/btn_delete_transaction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/btn_download_receipt"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/button_outline_red"
+                android:text="Delete Transaction"
+                android:textAllCaps="false"
+                android:textColor="#FF5252" />
+
         </RelativeLayout>
     </ScrollView>
 

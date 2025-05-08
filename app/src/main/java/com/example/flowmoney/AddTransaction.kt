@@ -22,6 +22,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.flowmoney.utlities.BudgetUtils
 
 class AddTransaction : AppCompatActivity() {
     companion object {
@@ -436,6 +437,11 @@ class AddTransaction : AppCompatActivity() {
             .addOnSuccessListener {
                 // Update account balance
                 updateAccountBalance(account, amount, type)
+                
+                // Update budget if this is an expense transaction
+                if (type == "expense") {
+                    BudgetUtils.updateBudgetSpending(userId, category.categoryId, amount)
+                }
                 
                 Toast.makeText(this, "Transaction saved successfully", Toast.LENGTH_SHORT).show()
                 setResult(RESULT_OK)

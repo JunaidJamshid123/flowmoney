@@ -197,6 +197,9 @@ class SearchActivity : AppCompatActivity() {
         
         // Load all transactions first
         firestore.collection("transactions")
+            .whereEqualTo("user_id", userId)
+            .whereEqualTo("is_deleted", false) // Only show non-deleted transactions
+            .orderBy("date", Query.Direction.DESCENDING) // Show newest first
             .get()
             .addOnSuccessListener { transactionDocuments ->
                 if (transactionDocuments.isEmpty) {

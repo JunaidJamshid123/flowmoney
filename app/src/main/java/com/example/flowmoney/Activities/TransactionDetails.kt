@@ -1,6 +1,7 @@
 package com.example.flowmoney.Activities
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -20,6 +21,8 @@ import com.example.flowmoney.Models.Account
 import com.example.flowmoney.Models.Category
 import com.example.flowmoney.Models.Transaction
 import com.example.flowmoney.R
+import com.example.flowmoney.utlities.BudgetUtils
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import de.hdodenhof.circleimageview.CircleImageView
 import java.io.File
@@ -46,6 +49,7 @@ class TransactionDetails : AppCompatActivity() {
     private lateinit var feeText: TextView
     private lateinit var totalText: TextView
     private lateinit var downloadReceiptButton: Button
+    private lateinit var deleteTransactionButton: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var invoiceContainer: LinearLayout
     private lateinit var invoiceImage: ImageView
@@ -121,6 +125,7 @@ class TransactionDetails : AppCompatActivity() {
         invoiceImage = findViewById(R.id.invoice_image)
         
         downloadReceiptButton = findViewById(R.id.btn_download_receipt)
+        deleteTransactionButton = findViewById(R.id.btn_delete_transaction)
         progressBar = findViewById(R.id.progress_bar)
     }
 
@@ -131,6 +136,113 @@ class TransactionDetails : AppCompatActivity() {
 
         downloadReceiptButton.setOnClickListener {
             checkPermissionAndGeneratePdf()
+        }
+        
+        deleteTransactionButton.setOnClickListener {
+            showDeleteConfirmationDialog()
+        }
+    }
+    
+    private fun showDeleteConfirmationDialog() {
+        transaction?.let { tx ->
+            AlertDialog.Builder(this)
+                .setTitle("Delete Transaction")
+                .setMessage("Are you sure you want to delete this transaction? This action cannot be undone.")
+                .setPositiveButton("Delete") { _, _ ->
+                    deleteTransaction(tx)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+    
+    private fun deleteTransaction(transaction: Transaction) {
+        // Show loading
+        showLoading(true)
+        
+        // Get transaction ID
+        val transactionId = transaction.transactionId
+        if (transactionId.isEmpty()) {
+            Toast.makeText(this, "Invalid transaction ID", Toast.LENGTH_SHORT).show()
+            showLoading(false)
+            return
+        }
+        
+        // Set is_deleted flag to true
+        firestore.collection("transactions")
+            .document(transactionId)
+            .update(
+                mapOf(
+                    "is_deleted" to true,
+                    "updated_at" to Timestamp.now()
+                )
+            )
+            .addOnSuccessListener {
+                Log.d(TAG, "Transaction deleted successfully")
+                
+                // If this is an expense transaction, update the budget
+                if (transaction.type == "expense") {
+                    BudgetUtils.updateBudgetSpending(
+                        transaction.userId,
+                        transaction.categoryId,
+                        transaction.amount,
+                        true // isDeleted=true will subtract the amount from budget
+                    )
+                }
+                
+                // Restore account balance if needed
+                if (account != null && (transaction.type == "expense" || transaction.type == "income")) {
+                    updateAccountBalanceAfterDeletion(account!!, transaction.amount, transaction.type)
+                }
+                
+                // Show success message
+                Toast.makeText(this, "Transaction deleted successfully", Toast.LENGTH_SHORT).show()
+                
+                // Close the activity
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error deleting transaction", e)
+                Toast.makeText(this, "Failed to delete transaction: ${e.message}", Toast.LENGTH_SHORT).show()
+                showLoading(false)
+            }
+    }
+    
+    private fun updateAccountBalanceAfterDeletion(account: Account, amount: Double, type: String) {
+        // Calculate the amount to add back to the account balance
+        val changeAmount = when (type) {
+            "income" -> -amount // For income, subtract the amount from balance
+            "expense", "saving" -> amount // For expense, add the amount back
+            else -> 0.0
+        }
+        
+        // Update account balance in Firestore
+        if (changeAmount != 0.0) {
+            val accountId = account.accountId
+            firestore.collection("accounts")
+                .document(accountId)
+                .get()
+                .addOnSuccessListener { document ->
+                    if (document != null && document.exists()) {
+                        val currentBalance = document.getDouble("balance") ?: 0.0
+                        val newBalance = currentBalance + changeAmount
+                        
+                        firestore.collection("accounts")
+                            .document(accountId)
+                            .update(
+                                mapOf(
+                                    "balance" to newBalance,
+                                    "updated_at" to System.currentTimeMillis()
+                                )
+                            )
+                            .addOnFailureListener { e ->
+                                Log.e(TAG, "Error restoring account balance", e)
+                            }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error getting account details", e)
+                }
         }
     }
 
@@ -144,6 +256,13 @@ class TransactionDetails : AppCompatActivity() {
                         // Create transaction object from document
                         val data = document.data ?: return@addOnSuccessListener
                         transaction = Transaction.fromMap(data, document.id)
+                        
+                        // Check if transaction is already deleted
+                        if (transaction?.isDeleted == true) {
+                            Toast.makeText(this, "This transaction has been deleted", Toast.LENGTH_SHORT).show()
+                            finish()
+                            return@addOnSuccessListener
+                        }
                         
                         // Load associated account and category
                         loadAccountDetails(transaction?.accountId ?: "")

@@ -15,20 +15,13 @@
         android:gravity="center_vertical">
 
         <!-- Category Icon Container -->
-        <FrameLayout
+        <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/fl_category_background"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/rounded_bg">
-
-            <ImageView
-                android:id="@+id/iv_category_icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/sort_descending"
-                android:layout_gravity="center"
-                app:tint="#FFFFFF" />
-        </FrameLayout>
+            android:src="@drawable/shoppingg"
+            app:civ_border_width="1dp"
+            app:civ_border_color="#E0E0E0" />
 
         <!-- Category Name -->
         <TextView

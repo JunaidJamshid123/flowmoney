@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.Models.Budget
 import com.example.flowmoney.Models.Category
@@ -57,6 +58,14 @@ class BudgetAdapter(
         // Set progress
         holder.budgetProgress.progress = budget.getProgress()
         
+        // Set progress bar color based on budget status
+        val progressColor = if (budget.isExceeded()) {
+            ContextCompat.getColor(context, R.color.expense_red)
+        } else {
+            ContextCompat.getColor(context, R.color.income_green)
+        }
+        holder.budgetProgress.progressTintList = android.content.res.ColorStateList.valueOf(progressColor)
+        
         // Set colors based on remaining amount
         if (budget.isExceeded()) {
             holder.budgetRemaining.setTextColor(context.getColor(R.color.expense_red))
@@ -70,6 +79,13 @@ class BudgetAdapter(
                 val decodedBytes = Base64.decode(category.iconBase64, Base64.DEFAULT)
                 val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
                 holder.profileImage.setImageBitmap(bitmap)
+                // Set border color based on income/expense
+                val borderColor = if (category.isIncome) {
+                    ContextCompat.getColor(context, R.color.income_green)
+                } else {
+                    ContextCompat.getColor(context, R.color.expense_red)
+                }
+                holder.profileImage.setBorderColor(borderColor)
             } catch (e: Exception) {
                 holder.profileImage.setImageResource(R.drawable.default_profile)
             }
