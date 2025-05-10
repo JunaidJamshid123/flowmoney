@@ -194,7 +194,7 @@ class HistoryActivity : AppCompatActivity() {
         allTransactions.clear()
         categories.clear()
 
-        // Query transactions
+      // Query Transactionss
         firestore.collection("transactions")
             .whereEqualTo("user_id", userId)
             .get()
