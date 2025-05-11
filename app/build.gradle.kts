@@ -75,6 +75,30 @@ dependencies {
     kapt("com.github.bumptech.glide:compiler:4.16.0")
     implementation(libs.firebase.storage)
 
+    // Room Database components for offline support
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    kapt("androidx.room:room-compiler:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion") // Kotlin Extensions for Room
+    
+    // Gson for JSON serialization/deserialization
+    implementation("com.google.code.gson:gson:2.10.1")
+    
+    // WorkManager for background synchronization
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+    
+    // SwipeRefreshLayout - needed for pull-to-refresh functionality
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    
+    // Lifecycle components - needed for viewModelScope and LiveData
+    val lifecycleVersion = "2.6.2"
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion") // viewModelScope
+    implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion") // LiveData + asLiveData()
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion") // lifecycleScope
+    
+    // OneSignal push notification
+    implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
+
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

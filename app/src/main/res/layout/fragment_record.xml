@@ -6,452 +6,466 @@
     android:layout_height="match_parent"
     tools:context=".Fragments.RecordFragment">
 
-    <RelativeLayout
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Gradient header background -->
-        <ImageView
-            android:id="@+id/header_background"
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/background"
-            android:layout_alignParentTop="true" />
+            android:layout_height="match_parent">
 
-        <!-- Balance Card - Modernized design -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/balance_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="30dp"
-            android:layout_marginEnd="20dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="6dp">
+            <!-- Gradient header background -->
+            <ImageView
+                android:id="@+id/header_background"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:scaleType="centerCrop"
+                android:src="@drawable/background"
+                android:layout_alignParentTop="true" />
 
-            <LinearLayout
+            <!-- Balance Card - Modernized design -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/balance_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/card_gradient_background">
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="30dp"
+                android:layout_marginEnd="20dp"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="6dp">
 
-                <!-- Total Balance Section -->
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingTop="16dp"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="20dp">
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:layout_alignParentStart="true">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Total Balance"
-                                android:textColor="#FFFFFF"
-                                android:textSize="15sp"
-                                android:alpha="0.9"
-                                android:fontFamily="sans-serif-medium" />
-
-                            <ImageView
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
-                                android:src="@drawable/ic_dropdown"
-                                android:alpha="0.9"
-                                android:layout_marginStart="6dp"
-                                app:tint="#FFFFFF" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/text_total_balance"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="$2,548.00"
-                            android:textColor="#FFFFFF"
-                            android:textSize="28sp"
-                            android:textStyle="bold"
-                            android:fontFamily="sans-serif-medium"
-                            android:layout_marginTop="5dp" />
-                    </LinearLayout>
-
-                    <ImageView
-                        android:id="@+id/btn_more_options"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/option"
-                        android:layout_alignParentEnd="true"
-                        android:padding="2dp"
-                        android:alpha="0.9"
-                        app:tint="#FFFFFF" />
-                </RelativeLayout>
-
-                <!-- Income, Expenses, and Savings Section -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="14dp"
-                    android:paddingBottom="16dp"
-                    android:paddingStart="20dp"
-                    android:paddingEnd="20dp">
+                    android:orientation="vertical"
+                    android:background="@drawable/card_gradient_background">
 
-                    <!-- Income Section -->
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <!-- Total Balance Section -->
+                    <RelativeLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:paddingTop="16dp"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp">
 
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
+                            android:orientation="vertical"
+                            android:layout_alignParentStart="true">
 
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/up_arrow"
-                                android:alpha="0.9"
-                                app:tint="#FFFFFF" />
-
-                            <TextView
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Income"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Total Balance"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="15sp"
+                                    android:alpha="0.9"
+                                    android:fontFamily="sans-serif-medium" />
+
+                                <ImageView
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
+                                    android:src="@drawable/ic_dropdown"
+                                    android:alpha="0.9"
+                                    android:layout_marginStart="6dp"
+                                    app:tint="#FFFFFF" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/text_total_balance"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$2,548.00"
                                 android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:alpha="0.9"
-                                android:fontFamily="sans-serif"
-                                android:layout_marginStart="6dp" />
+                                android:textSize="28sp"
+                                android:textStyle="bold"
+                                android:fontFamily="sans-serif-medium"
+                                android:layout_marginTop="5dp" />
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/text_income"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="$1,840.00"
-                            android:textColor="#FFFFFF"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:fontFamily="sans-serif-medium"
-                            android:layout_marginTop="4dp" />
-                    </LinearLayout>
+                        <ImageView
+                            android:id="@+id/btn_more_options"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:src="@drawable/option"
+                            android:layout_alignParentEnd="true"
+                            android:padding="2dp"
+                            android:alpha="0.9"
+                            app:tint="#FFFFFF" />
+                    </RelativeLayout>
 
-                    <!-- Expenses Section -->
+                    <!-- Income, Expenses, and Savings Section -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="horizontal"
+                        android:paddingTop="14dp"
+                        android:paddingBottom="16dp"
+                        android:paddingStart="20dp"
+                        android:paddingEnd="20dp">
 
+                        <!-- Income Section -->
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/down"
-                                android:alpha="0.9"
-                                app:tint="#FFFFFF" />
-
-                            <TextView
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Expenses"
-                                android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:alpha="0.9"
-                                android:fontFamily="sans-serif"
-                                android:layout_marginStart="6dp" />
-                        </LinearLayout>
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
 
-                        <TextView
-                            android:id="@+id/text_expenses"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="$284.00"
-                            android:textColor="#FFFFFF"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:fontFamily="sans-serif-medium"
-                            android:layout_marginTop="4dp" />
-                    </LinearLayout>
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/up_arrow"
+                                    android:alpha="0.9"
+                                    app:tint="#FFFFFF" />
 
-                    <!-- Savings Section -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:src="@drawable/up_arrow"
-                                android:alpha="0.9"
-                                android:rotation="45"
-                                app:tint="#FFFFFF" />
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Income"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="14sp"
+                                    android:alpha="0.9"
+                                    android:fontFamily="sans-serif"
+                                    android:layout_marginStart="6dp" />
+                            </LinearLayout>
 
                             <TextView
+                                android:id="@+id/text_income"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Savings"
+                                android:text="$1,840.00"
                                 android:textColor="#FFFFFF"
-                                android:textSize="14sp"
-                                android:alpha="0.9"
-                                android:fontFamily="sans-serif"
-                                android:layout_marginStart="6dp" />
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:fontFamily="sans-serif-medium"
+                                android:layout_marginTop="4dp" />
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/text_savings"
-                            android:layout_width="wrap_content"
+                        <!-- Expenses Section -->
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="$424.00"
-                            android:textColor="#FFFFFF"
-                            android:textSize="18sp"
-                            android:textStyle="bold"
-                            android:fontFamily="sans-serif-medium"
-                            android:layout_marginTop="4dp" />
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/down"
+                                    android:alpha="0.9"
+                                    app:tint="#FFFFFF" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Expenses"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="14sp"
+                                    android:alpha="0.9"
+                                    android:fontFamily="sans-serif"
+                                    android:layout_marginStart="6dp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/text_expenses"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$284.00"
+                                android:textColor="#FFFFFF"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:fontFamily="sans-serif-medium"
+                                android:layout_marginTop="4dp" />
+                        </LinearLayout>
+
+                        <!-- Savings Section -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:src="@drawable/up_arrow"
+                                    android:alpha="0.9"
+                                    android:rotation="45"
+                                    app:tint="#FFFFFF" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Savings"
+                                    android:textColor="#FFFFFF"
+                                    android:textSize="14sp"
+                                    android:alpha="0.9"
+                                    android:fontFamily="sans-serif"
+                                    android:layout_marginStart="6dp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/text_savings"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="$424.00"
+                                android:textColor="#FFFFFF"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:fontFamily="sans-serif-medium"
+                                android:layout_marginTop="4dp" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+            </androidx.cardview.widget.CardView>
 
-        <!-- Filter Section - Improved with Spinner Style -->
-        <androidx.cardview.widget.CardView
-            android:id="@+id/filter_card"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/balance_card"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="20dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
+            <!-- Filter Section - Improved with Spinner Style -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/filter_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+                android:layout_below="@id/balance_card"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="20dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp">
 
-                <!-- Date Filter Button - Consistent Style -->
                 <LinearLayout
-                    android:id="@+id/date_filter_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:background="@drawable/filter_chip_background"
-                    android:gravity="center_vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?attr/selectableItemBackground">
-                    
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/calendarr"
-                        app:tint="@color/accent_green" />
-                    
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <!-- Date Filter Button - Consistent Style -->
+                    <LinearLayout
+                        android:id="@+id/date_filter_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:background="@drawable/filter_chip_background"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
+                        
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/calendarr"
+                            app:tint="@color/accent_green" />
+                        
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="Date"
+                            android:textColor="#333333"
+                            android:textSize="14sp"
+                            android:fontFamily="sans-serif-medium" />
+                        
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginStart="4dp"
+                            android:src="@drawable/ic_dropdown"
+                            app:tint="@color/accent_green" />
+                    </LinearLayout>
+
+                    <!-- Date Filter Selected Text - Improved -->
                     <TextView
+                        android:id="@+id/date_filter_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="Date"
-                        android:textColor="#333333"
+                        android:background="@drawable/filter_chip_background"
+                        android:paddingStart="16dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp"
+                        android:text="Apr 23, 2023"
+                        android:textColor="@color/accent_green"
                         android:textSize="14sp"
-                        android:fontFamily="sans-serif-medium" />
-                    
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:layout_marginStart="4dp"
-                        android:src="@drawable/ic_dropdown"
-                        app:tint="@color/accent_green" />
-                </LinearLayout>
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium"
+                        android:visibility="gone" />
 
-                <!-- Date Filter Selected Text - Improved -->
+                    <!-- Category Filter - Consistent Style -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        
+                        <Spinner
+                            android:id="@+id/category_spinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/spinner_background"
+                            android:spinnerMode="dropdown"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:popupBackground="@drawable/spinner_dropdown_background" />
+                    </LinearLayout>
+
+                    <!-- Sort Filter - Consistent Style -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        
+                        <Spinner
+                            android:id="@+id/sort_spinner"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/spinner_background"
+                            android:spinnerMode="dropdown"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:popupBackground="@drawable/spinner_dropdown_background" />
+                    </LinearLayout>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Records Title Section -->
+            <LinearLayout
+                android:id="@+id/records_title_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/filter_card"
+                android:orientation="horizontal"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="8dp">
+
                 <TextView
-                    android:id="@+id/date_filter_text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/filter_chip_background"
-                    android:paddingStart="16dp"
-                    android:paddingTop="8dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="8dp"
-                    android:text="Apr 23, 2023"
-                    android:textColor="@color/accent_green"
-                    android:textSize="14sp"
+                    android:text="Recent Transactions"
+                    android:textColor="#333333"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:fontFamily="sans-serif-medium"
-                    android:visibility="gone" />
+                    android:fontFamily="sans-serif-medium" />
 
-                <!-- Category Filter - Consistent Style -->
-                <LinearLayout
+                <View
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    
-                    <Spinner
-                        android:id="@+id/category_spinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/spinner_background"
-                        android:spinnerMode="dropdown"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:popupBackground="@drawable/spinner_dropdown_background" />
-                </LinearLayout>
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
 
-                <!-- Sort Filter - Consistent Style -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-                    
-                    <Spinner
-                        android:id="@+id/sort_spinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/spinner_background"
-                        android:spinnerMode="dropdown"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:popupBackground="@drawable/spinner_dropdown_background" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/btn_see_all"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="See All"
+                    android:textColor="#6BC98C"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif-medium" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
 
-        <!-- Records Title Section -->
-        <LinearLayout
-            android:id="@+id/records_title_section"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_below="@id/filter_card"
-            android:orientation="horizontal"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="8dp">
+            <!-- Records RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_records"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@id/records_title_section"
+                android:clipToPadding="false"
+                android:paddingBottom="80dp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp" />
 
-            <TextView
+            <!-- Empty State View with Container for Offline Status -->
+            <FrameLayout
+                android:id="@+id/empty_state_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@id/records_title_section">
+
+                <LinearLayout
+                    android:id="@+id/empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
+                        android:src="@drawable/empty_folder"
+                        android:alpha="0.7" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="No transactions yet"
+                        android:textSize="18sp"
+                        android:textColor="#555555"
+                        android:fontFamily="sans-serif-medium"
+                        android:layout_marginTop="16dp" />
+
+                    <TextView
+                        android:id="@+id/empty_state_message"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Add your first transaction to start tracking"
+                        android:textSize="14sp"
+                        android:textColor="#888888"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- Floating Action Button (FAB) -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_add"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Recent Transactions"
-                android:textColor="#333333"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:fontFamily="sans-serif-medium" />
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <TextView
-                android:id="@+id/btn_see_all"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="See All"
-                android:textColor="#6BC98C"
-                android:textSize="14sp"
-                android:fontFamily="sans-serif-medium" />
-        </LinearLayout>
-
-        <!-- Records RecyclerView -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_records"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/records_title_section"
-            android:clipToPadding="false"
-            android:paddingBottom="80dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp" />
-
-        <!-- Empty State View (Initially Gone) -->
-        <LinearLayout
-            android:id="@+id/empty_state"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:src="@drawable/empty_folder"
-                android:alpha="0.7" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No transactions yet"
-                android:textSize="18sp"
-                android:textColor="#555555"
-                android:fontFamily="sans-serif-medium"
-                android:layout_marginTop="16dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Add your first transaction to start tracking"
-                android:textSize="14sp"
-                android:textColor="#888888"
-                android:layout_marginTop="8dp"
-                android:gravity="center" />
-        </LinearLayout>
-
-        <!-- Floating Action Button (FAB) -->
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_add"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginEnd="24dp"
-            android:layout_marginBottom="24dp"
-            android:contentDescription="Add new transaction"
-            android:src="@drawable/pluss"
-            app:tint="#FFFFFF"
-            app:backgroundTint="#6BC98C"
-            app:elevation="6dp"
-            app:fabSize="normal" />
-    </RelativeLayout>
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:layout_marginEnd="24dp"
+                android:layout_marginBottom="24dp"
+                android:contentDescription="Add new transaction"
+                android:src="@drawable/pluss"
+                app:tint="#FFFFFF"
+                app:backgroundTint="#6BC98C"
+                app:elevation="6dp"
+                app:fabSize="normal" />
+        </RelativeLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 </FrameLayout>

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
@@ -16,6 +17,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.example.flowmoney.Activities.Authentication.Login
 import com.example.flowmoney.Activities.HistoryActivity
@@ -23,11 +26,14 @@ import com.example.flowmoney.Activities.ProfileActivity
 import com.example.flowmoney.Activities.SearchActivity
 import com.example.flowmoney.Fragments.*
 import com.example.flowmoney.Models.User
+import com.example.flowmoney.utlities.OfflineStatusHelper
+import com.example.flowmoney.viewmodels.NetworkStatusViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import de.hdodenhof.circleimageview.CircleImageView
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
@@ -37,6 +43,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var auth: FirebaseAuth
     private lateinit var toolbar: Toolbar
     private lateinit var bottomNavigationView: BottomNavigationView
+    
+    // Offline support components
+    private lateinit var networkStatusViewModel: NetworkStatusViewModel
+    private lateinit var offlineStatusHelper: OfflineStatusHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +54,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         // Initialize Firebase components
         initializeFirebase()
+        
+        // Initialize offline support
+        initializeOfflineSupport()
 
         // Set up UI components
         setupToolbar()
@@ -60,6 +73,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         // Load user data for the navigation header
         loadUserData()
+    }
+    
+    private fun initializeOfflineSupport() {
+        // Initialize ViewModel
+        networkStatusViewModel = ViewModelProvider(this)[NetworkStatusViewModel::class.java]
+        
+        // Initialize offline status helper
+        offlineStatusHelper = OfflineStatusHelper.with(this, networkStatusViewModel)
+        offlineStatusHelper.initialize(findViewById(R.id.drawer_layout))
+        
+        // Observe network status
+        networkStatusViewModel.getNetworkStatus().observe(this) { isOnline ->
+            // Update UI based on network status
+            // For example, update menu items
+            navigationView.menu.findItem(R.id.nav_sync).isEnabled = isOnline
+            
+            // Show toast if network status changed
+            if (isOnline) {
+                Toast.makeText(this, "You're back online", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun initializeFirebase() {
@@ -247,9 +281,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun replaceFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .commit()
+        // Always allow fragment navigation regardless of network status
+        try {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit()
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error replacing fragment", e)
+            Toast.makeText(this, "Error navigating: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -266,7 +306,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             R.id.nav_sync -> {
                 Toast.makeText(this, "Syncing data...", Toast.LENGTH_SHORT).show()
-                refreshUserData() // Refresh data as a simple "sync" operation
+                syncData() // Use the network status to sync data
             }
             R.id.nav_trash -> {
                 Toast.makeText(this, "Trash", Toast.LENGTH_SHORT).show()
@@ -295,6 +335,29 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Close the drawer
         drawerLayout.closeDrawer(GravityCompat.START)
         return true
+    }
+    
+    private fun syncData() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            lifecycleScope.launch {
+                try {
+                    // Sync local changes to server
+                    networkStatusViewModel.syncWithServer()
+                    
+                    // Refresh data from server
+                    networkStatusViewModel.refreshData(currentUser.uid)
+                    
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Data synchronized successfully", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Sync failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     private fun shareApp() {
@@ -387,5 +450,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onResume()
         // Reload user data when returning to MainActivity
         loadUserData()
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clean up resources
+        offlineStatusHelper.cleanup()
     }
 }

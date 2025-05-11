@@ -20,18 +20,29 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.flowmoney.AddTransaction
 import com.example.flowmoney.Models.Category
 import com.example.flowmoney.Models.Transaction
 import com.example.flowmoney.R
+import com.example.flowmoney.utlities.OfflineDisplayHelper
+import com.example.flowmoney.utlities.OfflineStatusHelper
+import com.example.flowmoney.viewmodels.CategoryViewModel
+import com.example.flowmoney.viewmodels.NetworkStatusViewModel
+import com.example.flowmoney.viewmodels.TransactionViewModel
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -50,6 +61,8 @@ class RecordFragment : Fragment() {
     private lateinit var fabAdd: FloatingActionButton
     private lateinit var dateFilterButton: View
     private lateinit var dateFilterText: TextView
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var emptyStateMessage: TextView
 
     // Data
     private val transactions = mutableListOf<Transaction>()
@@ -63,6 +76,13 @@ class RecordFragment : Fragment() {
     private lateinit var auth: FirebaseAuth
     private lateinit var firestore: FirebaseFirestore
     private var transactionsListener: ListenerRegistration? = null
+    
+    // ViewModels for offline support
+    private lateinit var transactionViewModel: TransactionViewModel
+    private lateinit var categoryViewModel: CategoryViewModel
+    private lateinit var networkStatusViewModel: NetworkStatusViewModel
+    private lateinit var offlineStatusHelper: OfflineStatusHelper
+    private lateinit var offlineDisplayHelper: OfflineDisplayHelper
 
     // Activity result launcher for AddTransaction
     private val addTransactionLauncher = registerForActivityResult(
@@ -84,6 +104,9 @@ class RecordFragment : Fragment() {
         // Initialize Firebase
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
+        
+        // Initialize ViewModels
+        initViewModels()
 
         // Initialize views
         initViews(view)
@@ -96,8 +119,53 @@ class RecordFragment : Fragment() {
 
         // Setup click listeners
         setupClickListeners()
+        
+        // Setup offline status helper
+        setupOfflineSupport(view)
 
         return view
+    }
+    
+    private fun initViewModels() {
+        transactionViewModel = ViewModelProvider(requireActivity())[TransactionViewModel::class.java]
+        categoryViewModel = ViewModelProvider(requireActivity())[CategoryViewModel::class.java]
+        networkStatusViewModel = ViewModelProvider(requireActivity())[NetworkStatusViewModel::class.java]
+        
+        // Initialize offline display helper
+        offlineDisplayHelper = OfflineDisplayHelper(requireContext(), networkStatusViewModel)
+    }
+    
+    private fun setupOfflineSupport(view: View) {
+        offlineStatusHelper = OfflineStatusHelper(
+            requireContext(),
+            networkStatusViewModel,
+            viewLifecycleOwner
+        )
+        
+        // Initialize the offline indicator in the empty view
+        val emptyStateContainer = view.findViewById<ViewGroup>(R.id.empty_state_container)
+        if (emptyStateContainer != null) {
+            emptyStateContainer.removeAllViews()
+            emptyStateContainer.addView(
+                offlineStatusHelper.createOfflineEmptyView(emptyStateContainer)
+            )
+        }
+        
+        // Find empty state message text view
+        emptyStateMessage = view.findViewById(R.id.empty_state_message)
+        
+        // Observe network changes to update UI
+        networkStatusViewModel.getNetworkStatus().observe(viewLifecycleOwner) { isOnline ->
+            swipeRefreshLayout.isEnabled = isOnline
+            if (!isOnline) {
+                swipeRefreshLayout.isRefreshing = false
+            }
+            
+            // Update empty state message if needed
+            if (transactions.isEmpty()) {
+                showEmptyState(if (isOnline) "No transactions yet" else "You're offline. Your transactions will appear here.")
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -125,6 +193,29 @@ class RecordFragment : Fragment() {
         fabAdd = view.findViewById(R.id.fab_add)
         dateFilterButton = view.findViewById(R.id.date_filter_button)
         dateFilterText = view.findViewById(R.id.date_filter_text)
+        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout)
+        
+        // Initialize swipe refresh
+        swipeRefreshLayout.setOnRefreshListener {
+            refreshData()
+        }
+    }
+    
+    private fun refreshData() {
+        val userId = auth.currentUser?.uid ?: return
+        
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    networkStatusViewModel.refreshData(userId)
+                }
+                // Data will be automatically refreshed by LiveData observers
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error refreshing data: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                swipeRefreshLayout.isRefreshing = false
+            }
+        }
     }
 
     private fun setupRecyclerView() {
@@ -239,46 +330,25 @@ class RecordFragment : Fragment() {
     private fun loadCategories() {
         val userId = auth.currentUser?.uid ?: return
         
-        firestore.collection("categories")
-            .whereEqualTo("user_id", userId)
-            .get()
-            .addOnSuccessListener { documents ->
-                categories.clear()
-                
-                // Add "All" category at the beginning
-                val allCategory = Category()
-                allCategory.categoryId = "all"
-                allCategory.name = "All Categories"
-                categories.add(allCategory)
-                
-                // Add categories from Firestore
-                for (document in documents) {
-                    try {
-                        val category = Category()
-                        category.categoryId = document.getString("category_id") ?: ""
-                        category.userId = document.getString("user_id") ?: ""
-                        category.name = document.getString("name") ?: ""
-                        category.iconBase64 = document.getString("icon_base64") ?: ""
-                        category.isIncome = document.getBoolean("is_income") ?: false
-                        
-                        categories.add(category)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error parsing category", e)
-                    }
-                }
-                
-                // Update category spinner
-                updateCategorySpinner()
-                
-                // Load transactions after categories are loaded
-                loadTransactions()
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error loading categories", e)
-                Toast.makeText(context, "Failed to load categories: ${e.message}", Toast.LENGTH_SHORT).show()
-                // Load transactions anyway
-                loadTransactions()
-            }
+        // Use ViewModel to get categories from local database
+        categoryViewModel.getAllCategories(userId).observe(viewLifecycleOwner) { categoryList ->
+            categories.clear()
+            
+            // Add "All" category at the beginning
+            val allCategory = Category()
+            allCategory.categoryId = "all"
+            allCategory.name = "All Categories"
+            categories.add(allCategory)
+            
+            // Add categories from database
+            categories.addAll(categoryList)
+            
+            // Update category spinner
+            updateCategorySpinner()
+            
+            // Load transactions after categories are loaded
+            loadTransactions()
+        }
     }
 
     private fun updateCategorySpinner() {
@@ -300,59 +370,22 @@ class RecordFragment : Fragment() {
     private fun loadTransactions() {
         val userId = auth.currentUser?.uid ?: return
         
-        // Remove any existing listener
-        transactionsListener?.remove()
-        
-        // Create query for transactions
-        val query = firestore.collection("transactions")
-            .whereEqualTo("user_id", userId)
-            .whereEqualTo("is_deleted", false)
-            .orderBy("date", Query.Direction.DESCENDING)
-        
-        // Add real-time listener
-        transactionsListener = query.addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                Log.e(TAG, "Error listening for transactions", e)
-                showEmptyState("Error loading transactions")
-                return@addSnapshotListener
-            }
-            
-            if (snapshot == null || snapshot.isEmpty) {
-                transactions.clear()
-                transactionAdapter?.notifyDataSetChanged()
-                showEmptyState("No transactions yet")
-                updateSummaryValues(0.0, 0.0, 0.0)
-                return@addSnapshotListener
-            }
-            
-            // Parse transactions
-            val fetchedTransactions = snapshot.documents.mapNotNull { doc ->
-                try {
-                    val data = doc.data ?: return@mapNotNull null
-                    Transaction.fromMap(data, doc.id)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing transaction", e)
-                    null
-                }
-            }
-            
-            // Update transactions list
+        // Use ViewModel to get transactions from local database
+        transactionViewModel.getAllTransactions(userId).observe(viewLifecycleOwner) { transactionList ->
             transactions.clear()
-            transactions.addAll(fetchedTransactions)
+            transactions.addAll(transactionList)
             
             // Filter and sort based on current selection
             filterTransactions()
             
-            // Update summary values
-            updateSummaryValues(
-                income = transactions.filter { it.type == "income" }.sumOf { it.amount },
-                expense = transactions.filter { it.type == "expense" }.sumOf { it.amount },
-                savings = transactions.filter { it.type == "saving" }.sumOf { it.amount }
-            )
+            // Calculate summary values using the helper
+            val summary = offlineDisplayHelper.calculateSummary(transactions)
+            updateSummaryValues(summary.first, summary.second, summary.third)
             
             // Show/hide empty state
             if (transactions.isEmpty()) {
-                showEmptyState("No transactions yet")
+                val isOnline = networkStatusViewModel.getNetworkStatus().value ?: false
+                showEmptyState(if (isOnline) "No transactions yet" else "You're offline. Your transactions will appear here.")
             } else {
                 hideEmptyState()
             }
@@ -418,11 +451,11 @@ class RecordFragment : Fragment() {
     }
 
     private fun updateSummaryValues(income: Double, expense: Double, savings: Double) {
-        // Get total balance from AccountsFragment
-        val totalAccountBalance = AccountsFragment.accountsTotalBalance
+        // Calculate total balance as income - (expense + savings)
+        val calculatedBalance = income - (expense + savings)
         
-        // Display total balance from accounts
-        textTotalBalance.text = String.format("$%,.2f", totalAccountBalance)
+        // Display calculated balance (not from AccountsFragment)
+        textTotalBalance.text = String.format("$%,.2f", calculatedBalance)
         
         // Display income, expenses and savings
         textIncome.text = String.format("$%.2f", income)
@@ -431,7 +464,10 @@ class RecordFragment : Fragment() {
     }
 
     private fun showEmptyState(message: String) {
-        // Set empty state message here if you have a text view for it
+        // Set empty state message
+        if (::emptyStateMessage.isInitialized) {
+            emptyStateMessage.text = message
+        }
         emptyState.visibility = View.VISIBLE
         recyclerRecords.visibility = View.GONE
     }
@@ -500,66 +536,64 @@ class RecordFragment : Fragment() {
             holder.bind(transaction)
         }
         
-        override fun getItemCount(): Int = transactionList.size
+        override fun getItemCount() = transactionList.size
         
         inner class TransactionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-            private val categoryIcon: ImageView = itemView.findViewById(R.id.transaction_icon)
-            private val categoryName: TextView = itemView.findViewById(R.id.category_name)
-            private val transactionDate: TextView = itemView.findViewById(R.id.transaction_date)
-            private val transactionAmount: TextView = itemView.findViewById(R.id.transaction_amount)
+            private val textName: TextView = itemView.findViewById(R.id.text_name)
+            private val textAmount: TextView = itemView.findViewById(R.id.text_amount)
+            private val textDate: TextView = itemView.findViewById(R.id.text_date)
+            private val textCategory: TextView = itemView.findViewById(R.id.text_category)
+            private val imageCategory: ImageView = itemView.findViewById(R.id.image_category)
             
             fun bind(transaction: Transaction) {
+                // Set transaction notes or description
+                textName.text = transaction.notes.ifEmpty { "Transaction" }
+                
+                // Set amount with appropriate formatting based on transaction type
+                val amount = transaction.amount
+                val formattedAmount = String.format("$%.2f", amount)
+                textAmount.text = when (transaction.type) {
+                    "income" -> "+$formattedAmount"
+                    "expense" -> "-$formattedAmount"
+                    "saving" -> "-$formattedAmount (Saving)"
+                    else -> formattedAmount
+                }
+                
+                // Set text color based on transaction type
+                val colorRes = when (transaction.type) {
+                    "income" -> android.R.color.holo_green_dark
+                    "expense", "saving" -> android.R.color.holo_red_dark
+                    else -> android.R.color.black
+                }
+                textAmount.setTextColor(resources.getColor(colorRes, null))
+                
+                // Format date
+                val date = transaction.date.toDate()
+                val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                textDate.text = dateFormat.format(date)
+                
                 // Find category
                 val category = categoryList.find { it.categoryId == transaction.categoryId }
+                textCategory.text = category?.name ?: "Uncategorized"
                 
-                // Set category name
-                categoryName.text = category?.name ?: "Unknown"
-                
-                // Set date
-                val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                transactionDate.text = dateFormat.format(transaction.getDateAsDate())
-                
-                // Set amount with appropriate color and sign
-                val amount = transaction.getSignedAmount()
-                transactionAmount.text = String.format("$%,.2f", amount)
-                
-                // Set color based on transaction type
-                val textColor = when (transaction.type) {
-                    "income" -> getColorFromResource(R.color.income_green) 
-                    "expense" -> getColorFromResource(R.color.expense_red)
-                    "saving" -> getColorFromResource(R.color.saving_blue)
-                    else -> getColorFromResource(R.color.black)
-                }
-                transactionAmount.setTextColor(textColor)
-                
-                // Set icon from base64 if available
-                if (!category?.iconBase64.isNullOrEmpty()) {
-                    val iconBitmap = base64ToBitmap(category?.iconBase64)
-                    if (iconBitmap != null) {
-                        categoryIcon.setImageBitmap(iconBitmap)
+                // Set category icon if available
+                if (category != null && category.iconBase64.isNotEmpty()) {
+                    val bitmap = base64ToBitmap(category.iconBase64)
+                    if (bitmap != null) {
+                        imageCategory.setImageBitmap(bitmap)
                     } else {
-                        setDefaultIcon(transaction.type)
+                        // Default icon if bitmap creation fails
+                        imageCategory.setImageResource(R.drawable.ic_menu_camera)
                     }
                 } else {
-                    setDefaultIcon(transaction.type)
+                    // Default icon if no category or icon
+                    imageCategory.setImageResource(R.drawable.ic_menu_camera)
                 }
                 
                 // Set click listener
-                itemView.setOnClickListener { onItemClick(transaction) }
-            }
-            
-            private fun setDefaultIcon(transactionType: String) {
-                val iconResource = when (transactionType) {
-                    "income" -> R.drawable.income
-                    "expense" -> R.drawable.shoppingg
-                    "saving" -> R.drawable.saving
-                    else -> R.drawable.cash
+                itemView.setOnClickListener {
+                    onItemClick(transaction)
                 }
-                categoryIcon.setImageResource(iconResource)
-            }
-            
-            private fun getColorFromResource(colorResId: Int): Int {
-                return requireContext().getColor(colorResId)
             }
         }
     }

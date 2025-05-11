@@ -1,5 +1,6 @@
 package com.example.flowmoney
 
+import android.app.Activity
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Base64
@@ -176,7 +177,7 @@ class SetBudget : AppCompatActivity() {
         }
         
         val limit = limitStr.toDoubleOrNull() ?: run {
-            Toast.makeText(this, "Invalid budget amount", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Invalid budget limit", Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -282,5 +283,93 @@ class SetBudget : AppCompatActivity() {
             btnCancel.isEnabled = true
             btnSet.text = if (editMode) "UPDATE" else "SET"
         }
+    }
+    
+    private fun checkBudgetLimitsAndNotify() {
+        val currentUser = FirebaseAuth.getInstance().currentUser ?: return
+        val userId = currentUser.uid
+        
+        firestore.collection("budgets")
+            .whereEqualTo("user_id", userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    val categoryId = document.getString("category_id") ?: continue
+                    val budgetLimit = document.getDouble("limit") ?: continue
+                    val currentAmount = document.getDouble("spent") ?: 0.0
+                    
+                    // Check if budget is exceeded
+                    if (currentAmount > budgetLimit) {
+                        // Get category name
+                        firestore.collection("categories")
+                            .document(categoryId)
+                            .get()
+                            .addOnSuccessListener { categoryDoc ->
+                                val categoryName = categoryDoc.getString("name") ?: "Category"
+                                
+                                // Send notification for exceeded budget
+                                (application as FlowMoneyApplication).notificationHelper.notifyBudgetExceeded(
+                                    categoryName, 
+                                    budgetLimit, 
+                                    currentAmount
+                                )
+                            }
+                    }
+                }
+            }
+    }
+    
+    private fun saveBudgetToFirestore(budget: Budget) {
+        if (budget.categoryId.isBlank() || budget.limit <= 0) {
+            Toast.makeText(this, "Invalid budget data", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Show loading indicator
+        findViewById<View>(R.id.progressBar).visibility = View.VISIBLE
+        
+        // Reference to the budget document in Firestore
+        val budgetRef = firestore.collection("budgets").document(budget.budgetId)
+        
+        // Convert Budget object to Map
+        val budgetData = budget.toMap()
+        
+        // Add the budget to Firestore
+        budgetRef.set(budgetData)
+            .addOnSuccessListener {
+                Log.d(TAG, "Budget saved successfully!")
+                
+                // Check if the budget is already exceeded and notify if so
+                if (budget.spent > budget.limit) {
+                    // Get category name
+                    firestore.collection("categories")
+                        .document(budget.categoryId)
+                        .get()
+                        .addOnSuccessListener { categoryDoc ->
+                            val categoryName = categoryDoc.getString("name") ?: "Category"
+                            
+                            // Send notification for exceeded budget
+                            (application as FlowMoneyApplication).notificationHelper.notifyBudgetExceeded(
+                                categoryName, 
+                                budget.limit, 
+                                budget.spent
+                            )
+                        }
+                }
+                
+                // Hide loading indicator
+                findViewById<View>(R.id.progressBar).visibility = View.GONE
+                
+                // Set result and finish
+                setResult(Activity.RESULT_OK)
+                finish()
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error saving budget", e)
+                Toast.makeText(this, "Failed to save budget: ${e.message}", Toast.LENGTH_SHORT).show()
+                
+                // Hide loading indicator
+                findViewById<View>(R.id.progressBar).visibility = View.GONE
+            }
     }
 }

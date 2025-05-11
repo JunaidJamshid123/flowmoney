@@ -275,6 +275,11 @@ class AddNewCategory : AppCompatActivity() {
                 Log.d(TAG, "Category successfully added with ID: $categoryId")
                 Toast.makeText(this, "Category created successfully", Toast.LENGTH_SHORT).show()
 
+                // Send notification for new category
+                (application as FlowMoneyApplication).notificationHelper.notifyCategoryAdded(
+                    name
+                )
+
                 // Return result and close activity
                 setResult(Activity.RESULT_OK)
                 finish()

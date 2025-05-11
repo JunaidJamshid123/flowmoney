@@ -288,47 +288,44 @@ class AddNewAccount : AppCompatActivity() {
     }
 
     private fun saveAccountToFirestore(account: Account) {
-        // Use the already initialized Firestore instance
-        Log.d(TAG, "Starting to save account to Firestore...")
-
-        // Reference to accounts collection
-        val accountsRef = firestore.collection("accounts")
-
-        // Convert Account object to Map
-        val accountMap = account.toMap()
-
-        // Add explicit created_at and updated_at fields
-        val accountData = hashMapOf<String, Any>(
-            "account_id" to account.accountId,
-            "user_id" to account.userId,
-            "account_name" to account.accountName,
-            "balance" to account.balance,
-            "account_type" to account.accountType,
-            "created_at" to account.createdAt,
-            "updated_at" to account.updatedAt
-        )
-
-        // Add optional fields
-        account.accountImageUrl?.let { accountData["account_image_url"] = it }
-        account.note?.let { accountData["note"] = it }
-
-        // Add account with the generated ID
-        accountsRef.document(account.accountId)
-            .set(accountData)
+        // Show loading indicator
+        findViewById<View>(R.id.progressBar).visibility = View.VISIBLE
+        
+        // Generate account ID if not provided
+        if (account.accountId.isBlank()) {
+            account.accountId = UUID.randomUUID().toString()
+        }
+        
+        // Reference to the account document in Firestore
+        val accountRef = firestore.collection("accounts").document(account.accountId)
+        
+        // Convert Account object to a map for Firestore
+        val accountData = account.toMap()
+        
+        // Set the data to Firestore
+        accountRef.set(accountData)
             .addOnSuccessListener {
-                Log.d(TAG, "Account successfully added with ID: ${account.accountId}")
-                Toast.makeText(this, "Account created successfully", Toast.LENGTH_SHORT).show()
-
-                // Return result and close activity
+                Log.d(TAG, "Account saved successfully!")
+                
+                // Send notification for new account
+                (application as FlowMoneyApplication).notificationHelper.notifyAccountAdded(
+                    account.accountName, 
+                    account.accountType
+                )
+                
+                // Hide loading indicator
+                findViewById<View>(R.id.progressBar).visibility = View.GONE
+                
+                // Set result and finish
                 setResult(Activity.RESULT_OK)
                 finish()
             }
             .addOnFailureListener { e ->
-                Log.e(TAG, "Error adding account", e)
-                Toast.makeText(this, "Failed to create account: ${e.message}", Toast.LENGTH_LONG).show()
-
-                // Re-enable save button
-                saveButton.isEnabled = true
+                Log.e(TAG, "Error saving account", e)
+                Toast.makeText(this, "Failed to save account: ${e.message}", Toast.LENGTH_SHORT).show()
+                
+                // Hide loading indicator
+                findViewById<View>(R.id.progressBar).visibility = View.GONE
             }
     }
 }

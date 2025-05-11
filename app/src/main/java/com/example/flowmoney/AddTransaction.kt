@@ -443,6 +443,27 @@ class AddTransaction : AppCompatActivity() {
                     BudgetUtils.updateBudgetSpending(userId, category.categoryId, amount)
                 }
                 
+                // Send notification for new transaction
+                val transaction = Transaction(
+                    transactionId = transactionId,
+                    userId = userId,
+                    accountId = account.accountId,
+                    categoryId = category.categoryId,
+                    type = type,
+                    amount = amount,
+                    date = Timestamp(selectedDate.time),
+                    createdAt = Timestamp.now(),
+                    updatedAt = Timestamp.now(),
+                    notes = notes,
+                    isDeleted = false
+                )
+                (application as FlowMoneyApplication).notificationHelper.notifyTransactionAdded(transaction)
+                
+                // Check if the transaction caused any budget to be exceeded
+                if (type == "expense") {
+                    checkBudgetLimits(category.categoryId, amount)
+                }
+                
                 Toast.makeText(this, "Transaction saved successfully", Toast.LENGTH_SHORT).show()
                 setResult(RESULT_OK)
                 finish()
@@ -474,6 +495,45 @@ class AddTransaction : AppCompatActivity() {
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error updating account balance", e)
                 // Don't show error to user, transaction was still saved
+            }
+    }
+
+    /**
+     * Check if the transaction has caused any budget limit to be exceeded
+     */
+    private fun checkBudgetLimits(categoryId: String, transactionAmount: Double) {
+        val userId = auth.currentUser?.uid ?: return
+        
+        firestore.collection("budgets")
+            .whereEqualTo("user_id", userId)
+            .whereEqualTo("category_id", categoryId)
+            .get()
+            .addOnSuccessListener { documents ->
+                for (document in documents) {
+                    val budgetLimit = document.getDouble("amount") ?: continue
+                    val previousSpent = document.getDouble("spent") ?: 0.0
+                    
+                    // Calculate new spent amount after this transaction
+                    val newSpent = previousSpent + transactionAmount
+                    
+                    // Check if this transaction caused the budget to be exceeded
+                    if (previousSpent <= budgetLimit && newSpent > budgetLimit) {
+                        // Get category name
+                        firestore.collection("categories")
+                            .document(categoryId)
+                            .get()
+                            .addOnSuccessListener { categoryDoc ->
+                                val categoryName = categoryDoc.getString("name") ?: "Category"
+                                
+                                // Send notification for exceeded budget
+                                (application as FlowMoneyApplication).notificationHelper.notifyBudgetExceeded(
+                                    categoryName, 
+                                    budgetLimit, 
+                                    newSpent
+                                )
+                            }
+                    }
+                }
             }
     }
 }
