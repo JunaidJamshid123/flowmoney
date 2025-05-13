@@ -1,6 +1,7 @@
 package com.example.flowmoney.utlities
 
 import android.util.Log
+import com.example.flowmoney.FlowMoneyApplication
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Calendar
@@ -66,6 +67,23 @@ object BudgetUtils {
                         )
                         .addOnSuccessListener {
                             Log.d(TAG, "Budget spending updated successfully")
+                            
+                            // Check if budget is exceeded and notify
+                            val limit = budget.getDouble("limit") ?: 0.0
+                            if (finalSpent > limit) {
+                                // Get category name for notification
+                                firestore.collection("categories")
+                                    .document(categoryId)
+                                    .get()
+                                    .addOnSuccessListener { categoryDoc ->
+                                        val categoryName = categoryDoc.getString("name") ?: "Category"
+                                        FlowMoneyApplication.instance.notificationHelper.notifyBudgetExceeded(
+                                            categoryName,
+                                            limit,
+                                            finalSpent
+                                        )
+                                    }
+                            }
                         }
                         .addOnFailureListener { e ->
                             Log.e(TAG, "Error updating budget spending", e)

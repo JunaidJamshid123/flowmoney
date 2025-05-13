@@ -239,6 +239,10 @@ class SetBudget : AppCompatActivity() {
             .add(budget.toMap())
             .addOnSuccessListener { documentReference ->
                 Log.d(TAG, "Budget added with ID: ${documentReference.id}")
+                
+                // Check if there are any existing transactions that would exceed this budget
+                checkExistingTransactions(categoryId, limit)
+                
                 Toast.makeText(this, "Budget set successfully", Toast.LENGTH_SHORT).show()
                 setLoadingState(false)
                 finish()
@@ -262,6 +266,19 @@ class SetBudget : AppCompatActivity() {
             .update(updates)
             .addOnSuccessListener {
                 Log.d(TAG, "Budget updated successfully")
+                
+                // Check if the new limit is exceeded by current spending
+                firestore.collection(Budget.COLLECTION_NAME)
+                    .document(budgetId)
+                    .get()
+                    .addOnSuccessListener { budgetDoc ->
+                        val spent = budgetDoc.getDouble("spent") ?: 0.0
+                        if (spent > limit) {
+                            (application as FlowMoneyApplication).notificationHelper
+                                .notifyBudgetExceeded(categoryName, limit, spent)
+                        }
+                    }
+                
                 Toast.makeText(this, "Budget updated successfully", Toast.LENGTH_SHORT).show()
                 setLoadingState(false)
                 finish()
@@ -270,6 +287,37 @@ class SetBudget : AppCompatActivity() {
                 Log.e(TAG, "Error updating budget: ${e.message}")
                 Toast.makeText(this, "Failed to update budget", Toast.LENGTH_SHORT).show()
                 setLoadingState(false)
+            }
+    }
+    
+    private fun checkExistingTransactions(categoryId: String, limit: Double) {
+        val calendar = Calendar.getInstance()
+        calendar.set(Calendar.MONTH, currentMonth - 1) // Calendar months are 0-based
+        calendar.set(Calendar.YEAR, currentYear)
+        calendar.set(Calendar.DAY_OF_MONTH, 1)
+        val startOfMonth = calendar.time
+        
+        calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+        val endOfMonth = calendar.time
+        
+        // Query transactions for this category in the current month
+        firestore.collection("transactions")
+            .whereEqualTo("category_id", categoryId)
+            .whereEqualTo("type", "expense")
+            .whereGreaterThanOrEqualTo("date", Timestamp(startOfMonth))
+            .whereLessThanOrEqualTo("date", Timestamp(endOfMonth))
+            .get()
+            .addOnSuccessListener { documents ->
+                var totalSpent = 0.0
+                for (doc in documents) {
+                    totalSpent += doc.getDouble("amount") ?: 0.0
+                }
+                
+                // If total spent exceeds the new budget, send notification
+                if (totalSpent > limit) {
+                    (application as FlowMoneyApplication).notificationHelper
+                        .notifyBudgetExceeded(categoryName, limit, totalSpent)
+                }
             }
     }
     

@@ -38,8 +38,14 @@ class FlowMoneyApplication : Application() {
         )
     }
     
+    companion object {
+        lateinit var instance: FlowMoneyApplication
+            private set
+    }
+    
     override fun onCreate() {
         super.onCreate()
+        instance = this
         
         // Initialize notification helper
         notificationHelper = NotificationHelper(this)
