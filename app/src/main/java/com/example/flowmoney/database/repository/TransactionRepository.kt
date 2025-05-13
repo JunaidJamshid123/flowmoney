@@ -6,6 +6,7 @@ import com.example.flowmoney.Models.Transaction
 import com.example.flowmoney.database.LocalDataCache
 import com.example.flowmoney.database.dao.TransactionDao
 import com.example.flowmoney.database.entities.TransactionEntity
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.flow.Flow
@@ -64,7 +65,7 @@ class TransactionRepository(
     }
     
     /**
-     * Create a new transaction locally and update account balance
+     * Create a new transaction (works both online and offline)
      */
     suspend fun createTransaction(
         userId: String,
@@ -90,33 +91,56 @@ class TransactionRepository(
             notes = notes,
             invoiceBase64 = invoiceBase64
         )
-        
+
         try {
-            // Update account balance in Firestore
-            val accountRef = firestore.collection("accounts").document(accountId)
-            firestore.runTransaction { transaction ->
-                val account = transaction.get(accountRef)
-                val currentBalance = account.getDouble("balance") ?: 0.0
-                
-                // Calculate new balance based on transaction type
-                val newBalance = when (type) {
-                    "income" -> currentBalance + amount
-                    "expense", "saving" -> currentBalance - amount
-                    else -> currentBalance
-                }
-                
-                // Update account balance
-                transaction.update(accountRef, "balance", newBalance)
-            }.await()
-            
-            // Save transaction locally
+            // First save locally
             transactionDao.insert(entity)
             
-            Log.d(TAG, "Created new transaction and updated account balance: $transactionId")
+            try {
+                // Try to update Firestore if online
+                val transactionData = mapOf(
+                    "transaction_id" to transactionId,
+                    "user_id" to userId,
+                    "account_id" to accountId,
+                    "category_id" to categoryId,
+                    "type" to type,
+                    "amount" to amount,
+                    "date" to Timestamp(date),
+                    "created_at" to Timestamp.now(),
+                    "updated_at" to Timestamp.now(),
+                    "notes" to notes,
+                    "invoice_base64" to invoiceBase64,
+                    "is_deleted" to false
+                )
+
+                // Update Firestore and account balance
+                firestore.runTransaction { transaction ->
+                    // Update account balance
+                    val accountRef = firestore.collection("accounts").document(accountId)
+                    val account = transaction.get(accountRef)
+                    val currentBalance = account.getDouble("balance") ?: 0.0
+                    val newBalance = when (type) {
+                        "income" -> currentBalance + amount
+                        "expense", "saving" -> currentBalance - amount
+                        else -> currentBalance
+                    }
+                    
+                    // Save transaction and update account
+                    transaction.set(transactionsCollection.document(transactionId), transactionData)
+                    transaction.update(accountRef, "balance", newBalance)
+                }.await()
+
+                // Mark as synced in local DB
+                transactionDao.markAsSynced(transactionId)
+                Log.d(TAG, "Transaction synced with Firestore: $transactionId")
+            } catch (e: Exception) {
+                // If Firestore update fails, keep it marked for sync later
+                Log.e(TAG, "Failed to sync transaction with Firestore: $transactionId", e)
+            }
+
             return transactionId
-            
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating transaction or updating balance", e)
+            Log.e(TAG, "Error creating transaction", e)
             throw e
         }
     }
@@ -231,32 +255,58 @@ class TransactionRepository(
     }
     
     /**
-     * Sync local changes to Firestore
+     * Sync all unsynced transactions with Firestore
      */
     suspend fun syncUnSyncedTransactions() {
-        val unSyncedTransactions = transactionDao.getUnSyncedTransactions()
-        
-        Log.d(TAG, "Syncing ${unSyncedTransactions.size} unsynced transactions to Firestore")
-        
-        for (transaction in unSyncedTransactions) {
-            try {
-                if (transaction.isDeleted) {
-                    // Delete from Firestore
-                    transactionsCollection.document(transaction.transactionId).delete().await()
-                } else {
-                    // Create or update in Firestore
-                    val firestoreModel = transaction.toFirestoreModel()
-                    transactionsCollection.document(transaction.transactionId)
-                        .set(firestoreModel.toMap()).await()
+        try {
+            val unSyncedTransactions = transactionDao.getUnSyncedTransactions()
+            Log.d(TAG, "Found ${unSyncedTransactions.size} unsynced transactions")
+
+            for (transaction in unSyncedTransactions) {
+                try {
+                    val transactionData = mapOf(
+                        "transaction_id" to transaction.transactionId,
+                        "user_id" to transaction.userId,
+                        "account_id" to transaction.accountId,
+                        "category_id" to transaction.categoryId,
+                        "type" to transaction.type,
+                        "amount" to transaction.amount,
+                        "date" to Timestamp(transaction.date),
+                        "created_at" to Timestamp(transaction.createdAt),
+                        "updated_at" to Timestamp.now(),
+                        "notes" to transaction.notes,
+                        "invoice_base64" to transaction.invoiceBase64,
+                        "is_deleted" to transaction.isDeleted
+                    )
+
+                    // Update Firestore and account balance
+                    firestore.runTransaction { firestoreTransaction ->
+                        // Update account balance
+                        val accountRef = firestore.collection("accounts").document(transaction.accountId)
+                        val account = firestoreTransaction.get(accountRef)
+                        val currentBalance = account.getDouble("balance") ?: 0.0
+                        val newBalance = when (transaction.type) {
+                            "income" -> currentBalance + transaction.amount
+                            "expense", "saving" -> currentBalance - transaction.amount
+                            else -> currentBalance
+                        }
+                        
+                        // Save transaction and update account
+                        firestoreTransaction.set(transactionsCollection.document(transaction.transactionId), transactionData)
+                        firestoreTransaction.update(accountRef, "balance", newBalance)
+                    }.await()
+
+                    // Mark as synced in local DB
+                    transactionDao.markAsSynced(transaction.transactionId)
+                    Log.d(TAG, "Successfully synced transaction: ${transaction.transactionId}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to sync transaction ${transaction.transactionId}", e)
+                    // Continue with next transaction
                 }
-                
-                // Mark as synced locally
-                transactionDao.markAsSynced(transaction.transactionId)
-                Log.d(TAG, "Successfully synced transaction ${transaction.transactionId}")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error syncing transaction ${transaction.transactionId}", e)
-                // Continue with next transaction
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing unsynced transactions", e)
+            throw e
         }
     }
     
