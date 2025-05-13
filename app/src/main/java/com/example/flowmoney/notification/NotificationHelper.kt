@@ -1,11 +1,17 @@
 package com.example.flowmoney.notification
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.example.flowmoney.MainActivity
 import com.example.flowmoney.Models.Transaction
 import com.example.flowmoney.R
-import com.onesignal.OneSignal
-import com.onesignal.notifications.INotificationReceivedEvent
 import org.json.JSONObject
 import java.text.NumberFormat
 import java.util.Locale
@@ -16,19 +22,31 @@ import java.util.UUID
  */
 class NotificationHelper(private val context: Application) {
 
-    init {
-        // Set notification received handler for OneSignal version 5.0+
-        OneSignal.Notifications.addNotificationReceivedHandler { notificationReceivedEvent ->
-            handleNotificationReceived(notificationReceivedEvent)
-        }
+    companion object {
+        private const val CHANNEL_ID = "flow_money_notifications"
+        private const val CHANNEL_NAME = "FlowMoney Notifications"
+        private const val CHANNEL_DESCRIPTION = "Notifications for FlowMoney app"
+        
+        private const val NOTIFICATION_GROUP_TRANSACTIONS = "group_transactions"
+        private const val NOTIFICATION_GROUP_BUDGETS = "group_budgets"
     }
 
-    /**
-     * Handle incoming notifications
-     */
-    private fun handleNotificationReceived(event: INotificationReceivedEvent) {
-        // Process received notification
-        val notification = event.notification
+    init {
+        // Create notification channel for Android O and above
+        createNotificationChannel()
+    }
+    
+    private fun createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ (Android O and above)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
+                description = CHANNEL_DESCRIPTION
+            }
+            // Register the channel with the system
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
     }
 
     /**
@@ -41,7 +59,7 @@ class NotificationHelper(private val context: Application) {
         val title = "New $type Added"
         val message = "You added a new $type of $amount"
         
-        sendLocalNotification(title, message)
+        sendLocalNotification(title, message, NOTIFICATION_GROUP_TRANSACTIONS)
     }
 
     /**
@@ -51,7 +69,7 @@ class NotificationHelper(private val context: Application) {
         val title = "New Account Added"
         val message = "You added a new $accountType account: $accountName"
         
-        sendLocalNotification(title, message)
+        sendLocalNotification(title, message, NOTIFICATION_GROUP_TRANSACTIONS)
     }
 
     /**
@@ -61,7 +79,7 @@ class NotificationHelper(private val context: Application) {
         val title = "New Category Added"
         val message = "You added a new category: $categoryName"
         
-        sendLocalNotification(title, message)
+        sendLocalNotification(title, message, NOTIFICATION_GROUP_TRANSACTIONS)
     }
 
     /**
@@ -75,43 +93,51 @@ class NotificationHelper(private val context: Application) {
         val title = "Budget Limit Exceeded"
         val message = "Your $categoryName budget of $limitFormatted has been exceeded by $overAmount"
         
-        // Use different notification ID for budget alerts to ensure they're not overwritten
-        sendLocalNotification(title, message, additionalData = mapOf(
-            "type" to "budget_exceeded",
-            "category" to categoryName,
-            "limit" to budgetLimit,
-            "current" to currentAmount
-        ))
+        sendLocalNotification(title, message, NOTIFICATION_GROUP_BUDGETS)
     }
 
     /**
-     * Send local notification (doesn't use OneSignal dashboard)
+     * Send local notification using standard Android notification system
      */
     private fun sendLocalNotification(
         title: String, 
         message: String,
-        additionalData: Map<String, Any>? = null
+        group: String
     ) {
         try {
-            // Create notification content
-            val notificationJson = JSONObject()
-            notificationJson.put("title", title)
-            notificationJson.put("body", message)
-            
-            // Add additional data if provided
-            if (additionalData != null) {
-                val additionalDataJson = JSONObject()
-                for ((key, value) in additionalData) {
-                    additionalDataJson.put(key, value)
-                }
-                notificationJson.put("additionalData", additionalDataJson)
+            // Create intent for when notification is tapped
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
-            
-            // Generate a unique ID for the notification
-            val notificationId = UUID.randomUUID().toString()
-            
-            // Create an in-app notification (compatible with OneSignal 5.0+)
-            OneSignal.Notifications.postNotification(notificationJson, null)
+            val pendingIntent = PendingIntent.getActivity(
+                context, 0, intent, 
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            // Build the notification
+            val notificationId = System.currentTimeMillis().toInt()
+            val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_menu_camera) // Use appropriate icon from your resources
+                .setContentTitle(title)
+                .setContentText(message)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setGroup(group)
+
+            // Show the notification
+            with(NotificationManagerCompat.from(context)) {
+                // Check for notification permission (Android 13+)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == 
+                            android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        notify(notificationId, builder.build())
+                    }
+                } else {
+                    // For earlier Android versions, no runtime permission needed
+                    notify(notificationId, builder.build())
+                }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

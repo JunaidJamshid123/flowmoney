@@ -151,35 +151,69 @@ class AddNewCategory : AppCompatActivity() {
 
     private fun setupButtons() {
         btnCancel.setOnClickListener {
-            // Dismiss the dialog or finish activity
             finish()
         }
 
         btnSave.setOnClickListener {
             val categoryName = etName.text.toString().trim()
-
             if (categoryName.isEmpty()) {
                 etName.error = "Please enter a category name"
                 return@setOnClickListener
             }
 
-            // Disable save button to prevent multiple submissions
-            btnSave.isEnabled = false
+            // Show progress
             progressBar.visibility = View.VISIBLE
-            
-            // Show loading indicator
-            Toast.makeText(this, "Creating category...", Toast.LENGTH_SHORT).show()
+            btnSave.isEnabled = false
+            btnCancel.isEnabled = false
 
             try {
-                // Convert icon to Base64
+                // Get current user ID
+                val userId = auth.currentUser?.uid
+                if (userId == null) {
+                    Toast.makeText(this, "Please log in to add categories", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                // Convert selected icon to Base64
                 val iconBase64 = getIconAsBase64(this, selectedIconResId)
-                
-                // Create and save the category
-                saveCategory(categoryName, iconBase64)
+
+                // Create category object
+                val categoryId = UUID.randomUUID().toString()
+                val category = Category(
+                    categoryId = categoryId,
+                    userId = userId,
+                    name = categoryName,
+                    iconBase64 = iconBase64,
+                    isIncome = categoryType == "income"
+                )
+
+                // Save to Firestore
+                firestore.collection("categories")
+                    .document(categoryId)
+                    .set(category)
+                    .addOnSuccessListener {
+                        Log.d(TAG, "Category added successfully")
+                        
+                        // Send notification for new category
+                        (application as FlowMoneyApplication).notificationHelper.notifyCategoryAdded(categoryName)
+                        
+                        Toast.makeText(this, "Category added successfully", Toast.LENGTH_SHORT).show()
+                        setResult(Activity.RESULT_OK)
+                        finish()
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(TAG, "Error adding category", e)
+                        Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        btnSave.isEnabled = true
+                        btnCancel.isEnabled = true
+                        progressBar.visibility = View.GONE
+                    }
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving category", e)
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 btnSave.isEnabled = true
+                btnCancel.isEnabled = true
                 progressBar.visibility = View.GONE
             }
         }
@@ -229,68 +263,5 @@ class AddNewCategory : AppCompatActivity() {
         drawable.draw(canvas)
 
         return bitmap
-    }
-
-    private fun saveCategory(name: String, iconBase64: String) {
-        // Get current user
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            Log.e(TAG, "No user is currently logged in")
-            Toast.makeText(this, "You must be logged in to create a category", Toast.LENGTH_SHORT).show()
-            btnSave.isEnabled = true
-            progressBar.visibility = View.GONE
-            finish()
-            return
-        }
-
-        // Create a unique ID for the category
-        val categoryId = UUID.randomUUID().toString()
-        
-        // Create category object - handle the isIncome property correctly
-        val isIncome = categoryType == "income"
-        
-        val category = Category(
-            categoryId = categoryId,
-            userId = currentUser.uid,
-            name = name,
-            iconBase64 = iconBase64,
-            isIncome = isIncome,
-            iconResourceId = selectedIconResId
-        )
-        
-        // Set timestamps explicitly
-        val currentTime = System.currentTimeMillis()
-        category.createdAt = currentTime
-        category.updatedAt = currentTime
-        
-        // Add category type for the saving case
-        val categoryData = category.toMap().toMutableMap()
-        categoryData["category_type"] = categoryType
-
-        // Save to Firestore
-        firestore.collection("categories")
-            .document(categoryId)
-            .set(categoryData)
-            .addOnSuccessListener {
-                Log.d(TAG, "Category successfully added with ID: $categoryId")
-                Toast.makeText(this, "Category created successfully", Toast.LENGTH_SHORT).show()
-
-                // Send notification for new category
-                (application as FlowMoneyApplication).notificationHelper.notifyCategoryAdded(
-                    name
-                )
-
-                // Return result and close activity
-                setResult(Activity.RESULT_OK)
-                finish()
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error adding category", e)
-                Toast.makeText(this, "Failed to create category: ${e.message}", Toast.LENGTH_LONG).show()
-                
-                // Re-enable save button
-                btnSave.isEnabled = true
-                progressBar.visibility = View.GONE
-            }
     }
 }

@@ -288,8 +288,11 @@ class AddNewAccount : AppCompatActivity() {
     }
 
     private fun saveAccountToFirestore(account: Account) {
-        // Show loading indicator
-        findViewById<View>(R.id.progressBar).visibility = View.VISIBLE
+        // Find the progress bar safely
+        val progressBar = findViewById<View>(R.id.progressBar)
+        
+        // Show loading indicator if available
+        progressBar?.visibility = View.VISIBLE
         
         // Generate account ID if not provided
         if (account.accountId.isBlank()) {
@@ -313,8 +316,8 @@ class AddNewAccount : AppCompatActivity() {
                     account.accountType
                 )
                 
-                // Hide loading indicator
-                findViewById<View>(R.id.progressBar).visibility = View.GONE
+                // Hide loading indicator if available
+                progressBar?.visibility = View.GONE
                 
                 // Set result and finish
                 setResult(Activity.RESULT_OK)
@@ -324,8 +327,8 @@ class AddNewAccount : AppCompatActivity() {
                 Log.e(TAG, "Error saving account", e)
                 Toast.makeText(this, "Failed to save account: ${e.message}", Toast.LENGTH_SHORT).show()
                 
-                // Hide loading indicator
-                findViewById<View>(R.id.progressBar).visibility = View.GONE
+                // Hide loading indicator if available
+                progressBar?.visibility = View.GONE
             }
     }
 }

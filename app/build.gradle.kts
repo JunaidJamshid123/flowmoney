@@ -84,6 +84,8 @@ dependencies {
     // Gson for JSON serialization/deserialization
     implementation("com.google.code.gson:gson:2.10.1")
     
+    // Using Android standard notifications instead of OneSignal
+    
     // WorkManager for background synchronization
     implementation("androidx.work:work-runtime-ktx:2.8.1")
     
@@ -97,7 +99,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleVersion") // lifecycleScope
     
     // OneSignal push notification
-    implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
+    // implementation("com.onesignal:OneSignal:[5.0.0, 5.99.99]")
 
     // Testing
     testImplementation(libs.junit)

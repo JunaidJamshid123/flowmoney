@@ -12,9 +12,11 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.flowmoney.Activities.TransactionDetails
@@ -23,10 +25,19 @@ import com.example.flowmoney.Models.Category
 import com.example.flowmoney.Models.Transaction
 import com.example.flowmoney.R
 import com.example.flowmoney.utlities.ExpenseChartView
+import com.example.flowmoney.utlities.OfflineDisplayHelper
+import com.example.flowmoney.utlities.OfflineStatusHelper
+import com.example.flowmoney.viewmodels.CategoryViewModel
+import com.example.flowmoney.viewmodels.NetworkStatusViewModel
+import com.example.flowmoney.viewmodels.TransactionViewModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.Calendar
 import java.util.Locale
@@ -51,6 +62,8 @@ class AnalysisFragment : Fragment() {
     private lateinit var dataPointCard: CardView
     private lateinit var progressBar: ProgressBar
     private lateinit var btnSort: ImageButton
+    private lateinit var emptyStateView: View
+    private lateinit var emptyStateMessage: TextView
     
     // Time period buttons
     private lateinit var btnDay: Button
@@ -74,6 +87,13 @@ class AnalysisFragment : Fragment() {
     private var currentTransactionType = "expense"
     private var isSortedByAmount = true
     
+    // ViewModels for offline support
+    private lateinit var transactionViewModel: TransactionViewModel
+    private lateinit var categoryViewModel: CategoryViewModel
+    private lateinit var networkStatusViewModel: NetworkStatusViewModel
+    private lateinit var offlineStatusHelper: OfflineStatusHelper
+    private lateinit var offlineDisplayHelper: OfflineDisplayHelper
+    
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -84,6 +104,9 @@ class AnalysisFragment : Fragment() {
         // Initialize Firebase
         auth = FirebaseAuth.getInstance()
         firestore = FirebaseFirestore.getInstance()
+        
+        // Initialize ViewModels
+        initViewModels()
         
         // Initialize views
         initializeViews(view)
@@ -100,10 +123,41 @@ class AnalysisFragment : Fragment() {
         // Setup chart
         setupChart()
         
+        // Setup offline support
+        setupOfflineSupport(view)
+        
         // Load data
         loadData()
         
         return view
+    }
+    
+    private fun initViewModels() {
+        transactionViewModel = ViewModelProvider(requireActivity())[TransactionViewModel::class.java]
+        categoryViewModel = ViewModelProvider(requireActivity())[CategoryViewModel::class.java]
+        networkStatusViewModel = ViewModelProvider(requireActivity())[NetworkStatusViewModel::class.java]
+        
+        // Initialize offline display helper
+        offlineDisplayHelper = OfflineDisplayHelper(requireContext(), networkStatusViewModel)
+    }
+    
+    private fun setupOfflineSupport(view: View) {
+        offlineStatusHelper = OfflineStatusHelper(
+            requireContext(),
+            networkStatusViewModel,
+            viewLifecycleOwner
+        )
+        
+        // Find empty state elements
+        emptyStateView = view.findViewById(R.id.empty_state_container) ?: return
+        emptyStateMessage = view.findViewById(R.id.empty_state_message) ?: return
+        
+        // Observe network changes
+        networkStatusViewModel.getNetworkStatus().observe(viewLifecycleOwner) { isOnline ->
+            if (filteredTransactions.isEmpty()) {
+                updateEmptyState(if (isOnline) "No transactions found" else "You're offline. Data will sync when connection is restored.")
+            }
+        }
     }
     
     private fun initializeViews(view: View) {
@@ -122,30 +176,33 @@ class AnalysisFragment : Fragment() {
         
         monthLabels = view.findViewById(R.id.month_labels)
         
+        // Initialize empty state
+        try {
+            emptyStateView = view.findViewById(R.id.empty_state_container)
+            emptyStateMessage = view.findViewById(R.id.empty_state_message)
+        } catch (e: Exception) {
+            Log.e(TAG, "Empty state views not found", e)
+        }
+        
         // Setup button listeners
         btnSort.setOnClickListener {
             toggleSortOrder()
         }
+        
+        // Initially hide data point card
+        dataPointCard.visibility = View.GONE
     }
     
     private fun setupTimePeriodButtons() {
         val buttons = listOf(btnDay, btnWeek, btnMonth, btnYear)
         
         // Set default selected button
-        btnMonth.setBackgroundResource(R.drawable.bg_button_selected)
-        btnMonth.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
+        selectTimePeriodButton(btnMonth)
         
         buttons.forEach { button ->
             button.setOnClickListener {
-                // Reset all buttons
-                buttons.forEach { btn ->
-                    btn.setBackgroundResource(R.drawable.bg_button_unselected)
-                    btn.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
-                }
-                
-                // Set selected button
-                button.setBackgroundResource(R.drawable.bg_button_selected)
-                button.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
+                // Update UI for selected button
+                selectTimePeriodButton(button)
                 
                 // Update time period
                 currentTimePeriod = when (button) {
@@ -160,8 +217,25 @@ class AnalysisFragment : Fragment() {
                 
                 // Update chart
                 updateChart()
+                
+                // Filter transactions
+                filterTransactions()
             }
         }
+    }
+    
+    private fun selectTimePeriodButton(selectedButton: Button) {
+        val buttons = listOf(btnDay, btnWeek, btnMonth, btnYear)
+        
+        // Reset all buttons
+        buttons.forEach { button ->
+            button.setBackgroundResource(R.drawable.bg_button_unselected)
+            button.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
+        }
+        
+        // Set selected button
+        selectedButton.setBackgroundResource(R.drawable.bg_button_selected)
+        selectedButton.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
     }
     
     private fun setupFilterSpinner() {
@@ -174,10 +248,16 @@ class AnalysisFragment : Fragment() {
         spinnerFilter.setSelection(0)
         
         // Set listener
-        spinnerFilter.setOnItemSelectedListener { _, _, position, _ ->
-            currentTransactionType = filterOptions[position].lowercase()
-            updateChart()
-            filterTransactions()
+        spinnerFilter.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                currentTransactionType = filterOptions[position].lowercase()
+                updateChart()
+                filterTransactions()
+            }
+            
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {
+                // Do nothing
+            }
         }
     }
     
@@ -195,6 +275,7 @@ class AnalysisFragment : Fragment() {
         recyclerViewSpending.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = transactionAdapter
+            setHasFixedSize(true)
         }
     }
     
@@ -208,6 +289,9 @@ class AnalysisFragment : Fragment() {
             // Make sure data point card is visible
             dataPointCard.visibility = View.VISIBLE
         }
+        
+        // Initially hide the data point card until a point is selected
+        dataPointCard.visibility = View.GONE
     }
     
     private fun loadData() {
@@ -218,97 +302,44 @@ class AnalysisFragment : Fragment() {
         if (userId == null) {
             // User not logged in
             showLoading(false)
+            updateEmptyState("Please log in to view analysis")
             return
         }
         
-        // Clear existing data
-        allTransactions.clear()
-        categories.clear()
-        
-        // Load transactions
-        loadTransactions(userId)
+        // Load categories from view model
+        categoryViewModel.getAllCategories(userId).observe(viewLifecycleOwner) { categoryList ->
+            categories.clear()
+            // Convert list to map for easy lookup
+            for (category in categoryList) {
+                categories[category.categoryId] = category
+            }
+            
+            // Load transactions now that we have categories
+            loadTransactions(userId)
+        }
     }
     
     private fun loadTransactions(userId: String) {
-        // Get transactions for the last year
-        val calendar = Calendar.getInstance()
-        calendar.add(Calendar.YEAR, -1)
-        val oneYearAgo = Timestamp(calendar.time)
-        
-        // Query transactions - keep query simple and filter in code
-        firestore.collection("transactions")
-            .whereEqualTo("user_id", userId)
-            .get()
-            .addOnSuccessListener { documents ->
-                allTransactions.clear()
-                
-                for (document in documents) {
-                    try {
-                        val data = document.data
-                        val transaction = Transaction.fromMap(data, document.id)
-                        
-                        // Only add non-deleted transactions
-                        if (!transaction.isDeleted) {
-                            allTransactions.add(transaction)
-                            
-                            // Add category ID to load if not already loaded
-                            if (transaction.categoryId.isNotEmpty() && !categories.containsKey(transaction.categoryId)) {
-                                loadCategory(transaction.categoryId)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error parsing transaction", e)
-                    }
-                }
-                
-                // Log transaction count for debugging
-                Log.d(TAG, "Loaded ${allTransactions.size} transactions")
-                
-                // Initial filter and update
-                filterTransactions()
-                
-                // If we have no categories to load, we're done
-                if (categories.isEmpty()) {
-                    showLoading(false)
-                }
+        // Use ViewModel to get transactions from local database
+        transactionViewModel.getAllTransactions(userId).observe(viewLifecycleOwner) { transactionList ->
+            allTransactions.clear()
+            allTransactions.addAll(transactionList)
+            
+            // Filter and update UI
+            filterTransactions()
+            updateChart()
+            
+            // Hide loading indicator
+            showLoading(false)
+            
+            // Update empty state if necessary
+            if (allTransactions.isEmpty()) {
+                val isOnline = networkStatusViewModel.getNetworkStatus().value ?: false
+                updateEmptyState(if (isOnline) "No transactions found" else "You're offline. Data will sync when connection is restored.")
+            } else {
+                hideEmptyState()
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error loading transactions", e)
-                showLoading(false)
-            }
-    }
-    
-    private fun loadCategory(categoryId: String) {
-        firestore.collection("categories")
-            .document(categoryId)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    try {
-                        val category = Category()
-                        category.categoryId = document.getString("category_id") ?: ""
-                        category.userId = document.getString("user_id") ?: ""
-                        category.name = document.getString("name") ?: ""
-                        category.iconBase64 = document.getString("icon_base64") ?: ""
-                        category.isIncome = document.getBoolean("is_income") ?: false
-                        
-                        // Add to categories map
-                        categories[categoryId] = category
-                        
-                        // Update adapter
-                        updateTransactionAdapter()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error parsing category", e)
-                    }
-                }
-                
-                // If this was the last category to load, hide loading indicator
-                showLoading(false)
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error loading category", e)
-                showLoading(false)
-            }
+        }
     }
     
     private fun filterTransactions() {
@@ -371,10 +402,16 @@ class AnalysisFragment : Fragment() {
         
         // Update UI
         updateTransactionAdapter()
-        updateChart()
         
-        // Log for debugging
-        Log.d(TAG, "Filtered to ${filteredTransactions.size} transactions of type $currentTransactionType")
+        // Update empty state if needed
+        if (filteredTransactions.isEmpty()) {
+            updateEmptyState("No ${currentTransactionType.capitalize(Locale.ROOT)} transactions found for this time period")
+        } else {
+            hideEmptyState()
+        }
+        
+        // Update title in the top spending section
+        updateTopSpendingTitle()
     }
     
     private fun sortTransactions() {
@@ -391,10 +428,35 @@ class AnalysisFragment : Fragment() {
         isSortedByAmount = !isSortedByAmount
         sortTransactions()
         updateTransactionAdapter()
+        
+        // Update sort button icon
+        btnSort.setImageResource(
+            if (isSortedByAmount) R.drawable.ic_sort else R.drawable.sort_descending
+        )
+        
+        // Show toast message
+        Toast.makeText(
+            context,
+            if (isSortedByAmount) "Sorted by amount" else "Sorted by date",
+            Toast.LENGTH_SHORT
+        ).show()
     }
     
     private fun updateTransactionAdapter() {
         transactionAdapter.updateData(filteredTransactions, categories)
+        
+        // Check if we need to show empty state
+        if (filteredTransactions.isEmpty()) {
+            recyclerViewSpending.visibility = View.GONE
+            if (::emptyStateView.isInitialized) {
+                emptyStateView.visibility = View.VISIBLE
+            }
+        } else {
+            recyclerViewSpending.visibility = View.VISIBLE
+            if (::emptyStateView.isInitialized) {
+                emptyStateView.visibility = View.GONE
+            }
+        }
     }
     
     private fun updateChart() {
@@ -416,8 +478,9 @@ class AnalysisFragment : Fragment() {
         } else {
             View.GONE
         }
-        
-        // Update title in the top spending section
+    }
+    
+    private fun updateTopSpendingTitle() {
         val topSpendingText = view?.findViewById<TextView>(R.id.tv_top_spending)
         topSpendingText?.text = when (currentTimePeriod) {
             ExpenseChartView.TimePeriod.DAY -> "Today's ${currentTransactionType.capitalize(Locale.ROOT)}"
@@ -427,9 +490,33 @@ class AnalysisFragment : Fragment() {
         }
     }
     
+    private fun updateEmptyState(message: String) {
+        if (::emptyStateView.isInitialized && ::emptyStateMessage.isInitialized) {
+            emptyStateView.visibility = View.VISIBLE
+            emptyStateMessage.text = message
+            recyclerViewSpending.visibility = View.GONE
+        }
+    }
+    
+    private fun hideEmptyState() {
+        if (::emptyStateView.isInitialized) {
+            emptyStateView.visibility = View.GONE
+            recyclerViewSpending.visibility = View.VISIBLE
+        }
+    }
+    
     private fun showLoading(show: Boolean) {
         if (::progressBar.isInitialized) {
             progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        
+        // Refresh data when returning to the fragment
+        if (auth.currentUser != null) {
+            loadData()
         }
     }
 }

@@ -501,39 +501,50 @@ class AddTransaction : AppCompatActivity() {
     /**
      * Check if the transaction has caused any budget limit to be exceeded
      */
-    private fun checkBudgetLimits(categoryId: String, transactionAmount: Double) {
+    private fun checkBudgetLimits(categoryId: String, amount: Double) {
         val userId = auth.currentUser?.uid ?: return
         
+        // Get current month and year
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH) + 1 // Calendar months are 0-based
+        val currentYear = calendar.get(Calendar.YEAR)
+        
+        // Check if there's a budget for this category and if it's exceeded
         firestore.collection("budgets")
             .whereEqualTo("user_id", userId)
             .whereEqualTo("category_id", categoryId)
+            .whereEqualTo("month", currentMonth)
+            .whereEqualTo("year", currentYear)
             .get()
             .addOnSuccessListener { documents ->
-                for (document in documents) {
-                    val budgetLimit = document.getDouble("amount") ?: continue
-                    val previousSpent = document.getDouble("spent") ?: 0.0
+                if (!documents.isEmpty) {
+                    // Found a budget, check if it's exceeded
+                    val budget = documents.documents[0]
+                    val limit = budget.getDouble("limit") ?: 0.0
+                    val spent = budget.getDouble("spent") ?: 0.0
                     
-                    // Calculate new spent amount after this transaction
-                    val newSpent = previousSpent + transactionAmount
-                    
-                    // Check if this transaction caused the budget to be exceeded
-                    if (previousSpent <= budgetLimit && newSpent > budgetLimit) {
+                    // If budget is exceeded, send notification
+                    if (spent > limit) {
                         // Get category name
                         firestore.collection("categories")
                             .document(categoryId)
                             .get()
                             .addOnSuccessListener { categoryDoc ->
-                                val categoryName = categoryDoc.getString("name") ?: "Category"
-                                
-                                // Send notification for exceeded budget
-                                (application as FlowMoneyApplication).notificationHelper.notifyBudgetExceeded(
-                                    categoryName, 
-                                    budgetLimit, 
-                                    newSpent
-                                )
+                                if (categoryDoc.exists()) {
+                                    val categoryName = categoryDoc.getString("name") ?: "Unknown"
+                                    
+                                    // Send notification
+                                    (application as FlowMoneyApplication).notificationHelper
+                                        .notifyBudgetExceeded(categoryName, limit, spent)
+                                    
+                                    Log.d(TAG, "Budget exceeded notification sent for $categoryName")
+                                }
                             }
                     }
                 }
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error checking budget limits", e)
             }
     }
 }

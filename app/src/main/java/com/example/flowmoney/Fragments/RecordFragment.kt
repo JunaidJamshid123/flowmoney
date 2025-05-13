@@ -63,6 +63,7 @@ class RecordFragment : Fragment() {
     private lateinit var dateFilterText: TextView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var emptyStateMessage: TextView
+    private lateinit var progressBar: View
 
     // Data
     private val transactions = mutableListOf<Transaction>()
@@ -194,6 +195,7 @@ class RecordFragment : Fragment() {
         dateFilterButton = view.findViewById(R.id.date_filter_button)
         dateFilterText = view.findViewById(R.id.date_filter_text)
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh_layout)
+        progressBar = view.findViewById(R.id.progress_bar)
         
         // Initialize swipe refresh
         swipeRefreshLayout.setOnRefreshListener {
@@ -220,10 +222,16 @@ class RecordFragment : Fragment() {
 
     private fun setupRecyclerView() {
         transactionAdapter = TransactionAdapter(transactions, categories) { transaction ->
-            // Launch transaction details activity
-            val intent = Intent(requireContext(), com.example.flowmoney.Activities.TransactionDetails::class.java)
-            intent.putExtra(com.example.flowmoney.Activities.TransactionDetails.EXTRA_TRANSACTION_ID, transaction.transactionId)
-            startActivity(intent)
+            try {
+                // Launch transaction details activity with proper intent
+                val intent = Intent(requireContext(), com.example.flowmoney.Activities.TransactionDetails::class.java).apply {
+                    putExtra(com.example.flowmoney.Activities.TransactionDetails.EXTRA_TRANSACTION_ID, transaction.transactionId)
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error launching transaction details", e)
+                Toast.makeText(context, "Error opening transaction details", Toast.LENGTH_SHORT).show()
+            }
         }
 
         recyclerRecords.apply {
@@ -370,26 +378,68 @@ class RecordFragment : Fragment() {
     private fun loadTransactions() {
         val userId = auth.currentUser?.uid ?: return
         
-        // Use ViewModel to get transactions from local database
-        transactionViewModel.getAllTransactions(userId).observe(viewLifecycleOwner) { transactionList ->
-            transactions.clear()
-            transactions.addAll(transactionList)
-            
-            // Filter and sort based on current selection
-            filterTransactions()
-            
-            // Calculate summary values using the helper
-            val summary = offlineDisplayHelper.calculateSummary(transactions)
-            updateSummaryValues(summary.first, summary.second, summary.third)
-            
-            // Show/hide empty state
-            if (transactions.isEmpty()) {
-                val isOnline = networkStatusViewModel.getNetworkStatus().value ?: false
-                showEmptyState(if (isOnline) "No transactions yet" else "You're offline. Your transactions will appear here.")
-            } else {
-                hideEmptyState()
+        // Show loading state
+        showLoading(true)
+        
+        // First try to get from Firestore directly
+        firestore.collection("transactions")
+            .whereEqualTo("user_id", userId)
+            .whereEqualTo("is_deleted", false)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val firestoreTransactions = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val data = doc.data ?: return@mapNotNull null
+                        Transaction.fromMap(data, doc.id)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing transaction ${doc.id}", e)
+                        null
+                    }
+                }
+                
+                // Update local transactions
+                transactions.clear()
+                transactions.addAll(firestoreTransactions)
+                
+                // Filter and sort based on current selection
+                filterTransactions()
+                
+                // Calculate summary values
+                val summary = offlineDisplayHelper.calculateSummary(transactions)
+                updateSummaryValues(summary.first, summary.second, summary.third)
+                
+                // Show/hide empty state
+                if (transactions.isEmpty()) {
+                    showEmptyState("No transactions yet")
+                } else {
+                    hideEmptyState()
+                }
+                
+                // Hide loading
+                showLoading(false)
             }
-        }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error loading transactions from Firestore", e)
+                
+                // Fallback to local database
+                transactionViewModel.getAllTransactions(userId).observe(viewLifecycleOwner) { transactionList ->
+                    transactions.clear()
+                    transactions.addAll(transactionList)
+                    
+                    filterTransactions()
+                    
+                    val summary = offlineDisplayHelper.calculateSummary(transactions)
+                    updateSummaryValues(summary.first, summary.second, summary.third)
+                    
+                    if (transactions.isEmpty()) {
+                        showEmptyState("No transactions available")
+                    } else {
+                        hideEmptyState()
+                    }
+                    
+                    showLoading(false)
+                }
+            }
     }
 
     private fun filterTransactions() {
@@ -442,29 +492,42 @@ class RecordFragment : Fragment() {
         // Update adapter with filtered list
         transactionAdapter?.updateTransactions(filteredList)
         
-        // Show/hide empty state
+        // Show/hide empty state based on filtered results
         if (filteredList.isEmpty()) {
-            showEmptyState("No transactions match your filters")
+            if (transactions.isEmpty()) {
+                showEmptyState("No transactions yet")
+            } else {
+                showEmptyState("No transactions match your filters")
+            }
         } else {
             hideEmptyState()
         }
     }
 
     private fun updateSummaryValues(income: Double, expense: Double, savings: Double) {
-        // Calculate total balance as income - (expense + savings)
-        val calculatedBalance = income - (expense + savings)
-        
-        // Display calculated balance (not from AccountsFragment)
-        textTotalBalance.text = String.format("$%,.2f", calculatedBalance)
-        
-        // Display income, expenses and savings
-        textIncome.text = String.format("$%.2f", income)
-        textExpenses.text = String.format("$%.2f", expense)
-        textSavings.text = String.format("$%.2f", savings)
+        // Get total balance from accounts
+        val userId = auth.currentUser?.uid ?: return
+        firestore.collection("accounts")
+            .whereEqualTo("user_id", userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                val totalBalance = documents.sumOf { it.getDouble("balance") ?: 0.0 }
+                textTotalBalance.text = String.format("$%,.2f", totalBalance)
+                
+                // Display income, expenses and savings
+                textIncome.text = String.format("$%.2f", income)
+                textExpenses.text = String.format("$%.2f", expense)
+                textSavings.text = String.format("$%.2f", savings)
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error calculating total balance", e)
+                // Fallback to calculated balance if account fetch fails
+                val calculatedBalance = income - (expense + savings)
+                textTotalBalance.text = String.format("$%,.2f", calculatedBalance)
+            }
     }
 
     private fun showEmptyState(message: String) {
-        // Set empty state message
         if (::emptyStateMessage.isInitialized) {
             emptyStateMessage.text = message
         }
@@ -595,6 +658,16 @@ class RecordFragment : Fragment() {
                     onItemClick(transaction)
                 }
             }
+        }
+    }
+
+    private fun showLoading(show: Boolean) {
+        if (::progressBar.isInitialized) {
+            progressBar.visibility = if (show) View.VISIBLE else View.GONE
+        }
+        // Also update swipe refresh state
+        if (::swipeRefreshLayout.isInitialized) {
+            swipeRefreshLayout.isRefreshing = show
         }
     }
 }

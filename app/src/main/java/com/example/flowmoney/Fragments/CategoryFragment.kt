@@ -30,6 +30,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.auth.FirebaseAuth
 import android.widget.RadioGroup
 import android.widget.RadioButton
+import com.google.firebase.firestore.FirebaseFirestore
 
 class CategoryFragment : Fragment() {
     private val TAG = "CategoryFragment"
@@ -44,6 +45,7 @@ class CategoryFragment : Fragment() {
     
     // Firebase Auth instance
     private lateinit var auth: FirebaseAuth
+    private lateinit var firestore: FirebaseFirestore
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,6 +55,7 @@ class CategoryFragment : Fragment() {
 
         // Initialize Firebase Auth
         auth = FirebaseAuth.getInstance()
+        firestore = FirebaseFirestore.getInstance()
         
         // Check if user is logged in
         if (auth.currentUser == null) {
@@ -101,6 +104,9 @@ class CategoryFragment : Fragment() {
         // Get current user ID
         val userId = auth.currentUser?.uid ?: return
         
+        // First, get total balance from accounts
+        updateTotalBalance(userId)
+        
         FirestoreUtils.getAllCategories(
             userId = userId,
             onSuccess = { fetchedCategories ->
@@ -117,6 +123,20 @@ class CategoryFragment : Fragment() {
                 Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
             }
         )
+    }
+
+    private fun updateTotalBalance(userId: String) {
+        firestore.collection("accounts")
+            .whereEqualTo("user_id", userId)
+            .get()
+            .addOnSuccessListener { documents ->
+                val totalBalance = documents.sumOf { it.getDouble("balance") ?: 0.0 }
+                balanceTextView.text = String.format("$%,.2f", totalBalance)
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error calculating total balance", e)
+                balanceTextView.text = "$0.00"
+            }
     }
 
     private fun showAddCategoryDialog() {

@@ -26,7 +26,7 @@ interface TransactionDao {
     @Delete
     suspend fun delete(transaction: TransactionEntity)
 
-    @Query("SELECT * FROM transactions WHERE transactionId = :transactionId")
+    @Query("SELECT * FROM transactions WHERE transactionId = :transactionId LIMIT 1")
     suspend fun getTransactionById(transactionId: String): TransactionEntity?
 
     @Query("SELECT * FROM transactions WHERE userId = :userId AND isDeleted = 0 ORDER BY date DESC")
@@ -46,4 +46,10 @@ interface TransactionDao {
 
     @Query("UPDATE transactions SET isDeleted = 1, needsSync = 1 WHERE transactionId = :transactionId")
     suspend fun markAsDeleted(transactionId: String)
+
+    @Query("DELETE FROM transactions WHERE userId = :userId")
+    suspend fun deleteAllTransactions(userId: String)
+
+    @Query("SELECT COUNT(*) FROM transactions WHERE userId = :userId AND isDeleted = 0")
+    suspend fun getTransactionCount(userId: String): Int
 } 

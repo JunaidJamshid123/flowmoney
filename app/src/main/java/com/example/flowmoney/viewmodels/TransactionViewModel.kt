@@ -1,6 +1,7 @@
 package com.example.flowmoney.viewmodels
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.asLiveData
@@ -27,6 +28,15 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
      * Get all transactions for the current user
      */
     fun getAllTransactions(userId: String): LiveData<List<Transaction>> {
+        // Trigger a background sync when getting transactions
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                repository.syncTransactionsFromFirestore(userId)
+            } catch (e: Exception) {
+                Log.e("TransactionViewModel", "Error syncing transactions", e)
+            }
+        }
+        
         return repository.getAllTransactions(userId).asLiveData(Dispatchers.IO)
     }
     

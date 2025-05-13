@@ -34,12 +34,7 @@ class TransactionRepository(
      */
     fun getAllTransactions(userId: String): Flow<List<Transaction>> {
         return transactionDao.getAllTransactions(userId).map { entities ->
-            val transactions = entities.map { it.toFirestoreModel() }
-            
-            // Cache transactions locally for offline access
-            localDataCache?.cacheTransactions(userId, transactions)
-            
-            transactions
+            entities.filter { !it.isDeleted }.map { it.toFirestoreModel() }
         }
     }
     
@@ -69,7 +64,7 @@ class TransactionRepository(
     }
     
     /**
-     * Create a new transaction locally
+     * Create a new transaction locally and update account balance
      */
     suspend fun createTransaction(
         userId: String,
@@ -82,6 +77,8 @@ class TransactionRepository(
         invoiceBase64: String? = null
     ): String {
         val transactionId = UUID.randomUUID().toString()
+        
+        // Create transaction entity
         val entity = TransactionEntity.createLocalTransaction(
             transactionId = transactionId,
             userId = userId,
@@ -93,9 +90,35 @@ class TransactionRepository(
             notes = notes,
             invoiceBase64 = invoiceBase64
         )
-        transactionDao.insert(entity)
-        Log.d(TAG, "Created new local transaction: $transactionId")
-        return transactionId
+        
+        try {
+            // Update account balance in Firestore
+            val accountRef = firestore.collection("accounts").document(accountId)
+            firestore.runTransaction { transaction ->
+                val account = transaction.get(accountRef)
+                val currentBalance = account.getDouble("balance") ?: 0.0
+                
+                // Calculate new balance based on transaction type
+                val newBalance = when (type) {
+                    "income" -> currentBalance + amount
+                    "expense", "saving" -> currentBalance - amount
+                    else -> currentBalance
+                }
+                
+                // Update account balance
+                transaction.update(accountRef, "balance", newBalance)
+            }.await()
+            
+            // Save transaction locally
+            transactionDao.insert(entity)
+            
+            Log.d(TAG, "Created new transaction and updated account balance: $transactionId")
+            return transactionId
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating transaction or updating balance", e)
+            throw e
+        }
     }
     
     /**
@@ -107,13 +130,57 @@ class TransactionRepository(
     }
     
     /**
-     * Update an existing transaction in local database
+     * Update an existing transaction and adjust account balance
      */
     suspend fun updateTransaction(transaction: Transaction) {
-        val existingEntity = transactionDao.getTransactionById(transaction.transactionId)
-        if (existingEntity != null) {
+        try {
+            // Get the existing transaction
+            val existingTransaction = transactionDao.getTransactionById(transaction.transactionId)
+                ?: throw Exception("Transaction not found")
+            
+            // Update account balance if amount or type changed
+            if (existingTransaction.amount != transaction.amount || 
+                existingTransaction.type != transaction.type ||
+                existingTransaction.accountId != transaction.accountId) {
+                
+                // Revert old transaction effect
+                val oldAccountRef = firestore.collection("accounts").document(existingTransaction.accountId)
+                firestore.runTransaction { t ->
+                    val oldAccount = t.get(oldAccountRef)
+                    val oldBalance = oldAccount.getDouble("balance") ?: 0.0
+                    val revertedBalance = when (existingTransaction.type) {
+                        "income" -> oldBalance - existingTransaction.amount
+                        "expense", "saving" -> oldBalance + existingTransaction.amount
+                        else -> oldBalance
+                    }
+                    t.update(oldAccountRef, "balance", revertedBalance)
+                }.await()
+                
+                // Apply new transaction effect if account is different
+                if (existingTransaction.accountId != transaction.accountId) {
+                    val newAccountRef = firestore.collection("accounts").document(transaction.accountId)
+                    firestore.runTransaction { t ->
+                        val newAccount = t.get(newAccountRef)
+                        val currentBalance = newAccount.getDouble("balance") ?: 0.0
+                        val newBalance = when (transaction.type) {
+                            "income" -> currentBalance + transaction.amount
+                            "expense", "saving" -> currentBalance - transaction.amount
+                            else -> currentBalance
+                        }
+                        t.update(newAccountRef, "balance", newBalance)
+                    }.await()
+                }
+            }
+            
+            // Update transaction in local database
             val updatedEntity = TransactionEntity.fromFirestoreModel(transaction, false)
             transactionDao.update(updatedEntity)
+            
+            Log.d(TAG, "Updated transaction and adjusted account balance: ${transaction.transactionId}")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating transaction or adjusting balance", e)
+            throw e
         }
     }
     
@@ -133,7 +200,6 @@ class TransactionRepository(
         try {
             val querySnapshot = transactionsCollection
                 .whereEqualTo("user_id", userId)
-                .orderBy("date", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
@@ -191,6 +257,48 @@ class TransactionRepository(
                 Log.e(TAG, "Error syncing transaction ${transaction.transactionId}", e)
                 // Continue with next transaction
             }
+        }
+    }
+    
+    /**
+     * Sync transactions from Firestore to local database
+     */
+    suspend fun syncTransactionsFromFirestore(userId: String) {
+        try {
+            // Get transactions from Firestore
+            val snapshot = transactionsCollection
+                .whereEqualTo("user_id", userId)
+                .whereEqualTo("is_deleted", false)
+                .get()
+                .await()
+            
+            // Convert to Transaction objects and batch insert
+            val transactions = snapshot.documents.mapNotNull { doc ->
+                try {
+                    val data = doc.data ?: return@mapNotNull null
+                    Transaction.fromMap(data, doc.id)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing transaction ${doc.id}", e)
+                    null
+                }
+            }
+            
+            // Batch insert all transactions
+            val entities = transactions.map { transaction ->
+                TransactionEntity.fromFirestoreModel(transaction, true)
+            }
+            
+            // Use transaction to ensure atomic operation
+            transactionDao.deleteAllTransactions(userId) // Clear old data
+            transactionDao.insertAll(entities) // Insert new data
+            
+            // Cache transactions for offline access
+            localDataCache?.cacheTransactions(userId, transactions)
+            
+            Log.d(TAG, "Successfully synced ${transactions.size} transactions from Firestore")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error syncing transactions from Firestore", e)
+            // Don't throw the exception - let the app continue with local data
         }
     }
 } 
